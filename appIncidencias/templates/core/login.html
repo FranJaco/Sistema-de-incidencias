@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .login-container {
+            background: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            width: 100% 0;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        input[type="submit"] {
+            background-color: #5cb85c;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 50px auto 0px auto;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #4cae4c;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="login-container">
+        <h2>Iniciar Sesión</h2>
+        <form action="/ruta/del/servidor" method="POST">
+            <div>
+                <input type="text" id="username" name="username" required>
+            </div>
+            <label>Usuario</label>
+            <div>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <label>Contraseña</label>
+            <div>
+                <input type="submit" value="Entrar">
+            </div>
+        </form>
+
+    </div>
+
+</body>
+
+</html>
