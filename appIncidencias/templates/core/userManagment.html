@@ -67,15 +67,15 @@
         <h1>Sistema de reportes de incidencias</h1>
         <ul>
             <li><a href="{% url 'home' %}">Inicio</a></li>
-            <li><a class="active">Generar nuevo reporte</a></li>
+            <li><a href="{% url 'addReports' %}">Generar nuevo reporte</a></li>
             <li><a href="{% url 'viewReports' %}">Ver reportes anteriores</a></li>
-            <li><a href="{% url 'userManagment' %}">Administrar usuarios</a></li>
+            <li><a class="active">Administrar usuarios</a></li>
         </ul>
     </div>
 
     <div class="background-container">
         <div class="main-container">
-            <h1>Hola, {{ user.get_username }}, te encuenteas en Generar nuevos reportes</h1>
+            <h1>Hola, {{ user.get_username }}, te encuenteas en Administrar usuarios</h1>
         </div>
     </div>
 

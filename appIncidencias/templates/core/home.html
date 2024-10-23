@@ -49,7 +49,7 @@
         }
 
         .left-menu a.active {
-            background-color: #04AA6D;
+            background-color: #ececece2;
             color: black;
         }
 
@@ -66,15 +66,16 @@
     <div class="left-menu">
         <h1>Sistema de reportes de incidencias</h1>
         <ul>
-            <a href="#news">Generar nuevo reporte</a>
-            <a href="#contact">Ver reportes anteriores</a>
-            <a href="#about">Administrar usuarios</a>
+            <li><a class="active">Inicio</a></li>
+            <li><a href="{% url 'addReports' %}">Generar nuevo reporte</a></li>
+            <li><a href="{% url 'viewReports' %}">Ver reportes anteriores</a></li>
+            <li><a href="{% url 'userManagment' %}">Administrar usuarios</a></li>
         </ul>
     </div>
 
     <div class="background-container">
         <div class="main-container">
-            <h1>this is the main container</h1>
+            <h1>Hola, {{ user.get_username }}, te encuentras en el inicio</h1>
         </div>
     </div>
 

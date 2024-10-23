@@ -80,7 +80,8 @@
 
     <div class="login-container">
         <h2>Iniciar Sesión</h2>
-        <form action="/ruta/del/servidor" method="POST">
+        <form method="POST">
+            {% csrf_token %}
             <div class="input-box">
                 <input type="text" id="username" name="username" placeholder="Usuario" required>
                 <i class="bi bi-person"></i>
@@ -94,6 +95,13 @@
             </div>
         </form>
 
+        {% if messages %}
+            <div class="alert alert-danger">
+                {% for message in messages %}
+                    <p>{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
     </div>
 
 </body>
