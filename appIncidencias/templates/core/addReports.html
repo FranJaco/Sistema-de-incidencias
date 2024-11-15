@@ -76,6 +76,12 @@
     <div class="background-container">
         <div class="main-container">
             <h1>Hola, {{ user.get_username }}, te encuenteas en Generar nuevos reportes</h1>
+            <select name="departments" id="departments">
+                {% for departments in departments %}
+                    <option value="{{ department.id }}">{{ department.dep_name }}</option>
+                {% endfor %}
+            </select>
+            <input type="button" name="fffff" id="createReport">
         </div>
     </div>
 
