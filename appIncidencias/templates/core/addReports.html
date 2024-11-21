@@ -36,8 +36,34 @@
             padding: 30px;
             position: absolute;
         }
-        
-        .left-menu h1{
+
+        .main-container div {
+            padding: 15px;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 50%;
+        }
+
+        /* .select-dep,
+        .select-emp,
+        .tittle-text,
+        .summary-text{
+            width: 50%;
+        } */
+
+        .form-control,
+        .form-select {
+            width: 50%;
+        }
+
+        textarea {
+            height: 250px;
+        }
+
+        .left-menu h1 {
             padding: 15px;
         }
 
@@ -63,7 +89,7 @@
 <body>
 
 
-    <div class="left-menu">
+    <div class="left-menu d-flex flex-column flex-shrink-0 bg-body-tertiary">
         <h1>Sistema de reportes de incidencias</h1>
         <ul>
             <li><a href="{% url 'home' %}">Inicio</a></li>
@@ -75,15 +101,123 @@
 
     <div class="background-container">
         <div class="main-container">
-            <h1>Hola, {{ user.get_username }}, te encuenteas en Generar nuevos reportes</h1>
-            <select name="departments" id="departments">
-                {% for departments in departments %}
-                    <option value="{{ department.id }}">{{ department.dep_name }}</option>
-                {% endfor %}
-            </select>
-            <input type="button" name="fffff" id="createReport">
+            <h1>Hola, {{ user }}, te encuenteas en Generar nuevos reportes</h1>
+
+            <div class="select-dep">
+                <select name="departments" id="departments" class="form-select" aria-label="Default select example">
+                    <option selected disabled value style="color: grey;"> -- Elige un departamento -- </option>
+                    {% for x in departments %}
+                    <option value="{{ x.id }}">{{ x }}</option>
+                    {% empty %}
+                    <option value="">No hay departamentos disponibles</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="select-emp" id="employee-container" style="display: none;">
+                <select name="employees" id="employees" class="form-select">
+                    <option selected disabled value style="color: grey;"> -- Elige el empleado que solicitó asistencia
+                        -- </option>
+                </select>
+            </div>
+
+            <div class="title-txt">
+                <input type="text" placeholder="Titulo del reporte" class="form-control">
+            </div>
+
+            <div class="summary-txt">
+                <textarea placeholder="Describa la incidencia laboral" class="form-control"
+                    aria-label="With textarea"></textarea>
+            </div>
+
+            <div>
+                <button type="button" class="btn btn-outline-success" id="ReportBtn">Subir reporte</button>
+            </div>
+
         </div>
     </div>
+
+    <script>
+        document.getElementById('departments').addEventListener('change', function () {
+            var departmentId = this.value;
+            var employeeContainer = document.getElementById('employee-container');
+
+            if (departmentId) {
+                // Si se ha seleccionado un departamento, mostramos el div de empleados
+                employeeContainer.style.display = 'block';
+
+                // Hacer una petición AJAX para obtener los empleados de este departamento
+                fetch('/get_employees/' + departmentId + '/')
+                    .then(response => response.json())
+                    .then(data => {
+                        var employeeSelect = document.getElementById('employees');
+                        employeeSelect.innerHTML = '<option selected value> -- Elige el empleado -- </option>';
+                        data.employees.forEach(function (employee) {
+                            var option = document.createElement('option');
+                            option.value = employee.id;
+                            option.textContent = employee.name;
+                            employeeSelect.appendChild(option);
+                        });
+                    })
+                    .catch(error => console.error('Error al obtener los empleados:', error));
+            } else {
+                // Si no se ha seleccionado un departamento, ocultamos el div de empleados
+                employeeContainer.style.display = 'none';
+
+                // Limpiar el select de empleados para evitar que muestre opciones de un departamento anterior
+                document.getElementById('employees').innerHTML = '<option selected value> -- Elige el empleado -- </option>';
+            }
+        });
+
+        document.getElementById('ReportBtn').addEventListener('click', function () {
+            // Recoger los valores del formulario
+            var departmentId = document.getElementById('departments').value;
+            var employeeId = document.getElementById('employees').value;
+            var title = document.querySelector('.title-txt input').value;
+            var summary = document.querySelector('.summary-txt textarea').value;
+
+            // Comprobar si todos los campos están llenos
+            if (!departmentId || !employeeId || !title || !summary) {
+                alert("Por favor, complete todos los campos.");
+                return;
+            }
+
+            // Realizar la solicitud AJAX para guardar el reporte
+            fetch('{% url "addReports" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}',  // Importante para el CSRF token en Django
+                },
+                body: JSON.stringify({
+                    department_id: departmentId,
+                    employee_id: employeeId,
+                    title: title,
+                    summary: summary
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert("Reporte generado con éxito.");
+                        // Aquí puedes redirigir al usuario a la página de reporte o limpiar el formulario si es necesario
+                        document.querySelector('.title-txt input').value = ''; // Vaciar el campo del título
+                        document.querySelector('.summary-txt textarea').value = ''; // Vaciar el campo del resumen
+
+                        // Restablecer el campo de selección de departamento
+                        document.getElementById('departments').value = '';
+                        // Restablecer el campo de selección de empleados
+                        document.getElementById('employees').value = '';
+
+                        // Ocultar el contenedor de empleados si el departamento ya ha sido deseleccionado
+                        document.getElementById('employee-container').style.display = 'none';
+                    } else {
+                        alert("Hubo un error al generar el reporte: " + data.error);
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        });
+    </script>
 
 
 </body>
