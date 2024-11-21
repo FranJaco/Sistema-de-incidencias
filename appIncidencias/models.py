@@ -17,7 +17,7 @@ class Department(models.Model):
 #    def __str__(self):
 #        return f"{self.pile_name} {self.sur_name}"
 
-# 1. Crear el Manager personalizado
+# Manager personalizado
 class TechSupportEmployeeManager(BaseUserManager):
     def create_user(self, pile_name, sur_name, username, password=None):
         if not username:
@@ -33,7 +33,7 @@ class TechSupportEmployeeManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
-# 2. Crear el modelo Tech_support_employee como modelo de usuario
+# Modelo de usuario
 class Tech_support_employee(AbstractBaseUser, PermissionsMixin):
     username = models.CharField(max_length=30, unique=True, default = 'user1')
     pile_name = models.CharField(max_length=30)
@@ -76,7 +76,7 @@ class Report(models.Model):
     title           = models.CharField(max_length=50)
     summary         = models.TextField()
     creation_date   = models.DateTimeField(auto_now_add=True)
-    tec_supp_emp = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    tec_supp_emp    = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     non_tec_emp     = models.ForeignKey(Non_Tech_employee, on_delete=models.CASCADE)
     
     def __str__(self):

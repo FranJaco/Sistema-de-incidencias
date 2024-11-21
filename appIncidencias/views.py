@@ -80,4 +80,10 @@ def user_managment(request):
     return render (request, 'core/userManagment.html')
 
 def view_reports(request):
-    return render (request, 'core/viewReports.html')
+    reports = Report.objects.all()
+
+    context = {
+        'reports': reports,
+    }
+
+    return render (request, 'core/viewReports.html', context)
