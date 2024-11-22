@@ -41,6 +41,15 @@
             position: absolute;
         }
 
+        .table th,
+        .table td {
+            text-align: center;
+        }
+
+        .table button {
+            width: 80px;
+        }
+
         .left-menu h1 {
             padding: 15px;
         }
@@ -88,8 +97,7 @@
                         <th scope="col">Titulo:</th>
                         <th scope="col">Fecha de creacion:</th>
                         <th scope="col">Empleado asistido:</th>
-                        <th scope="col">Elaborado por:</th>
-                        <th scope="col">Ver reportes</th>
+                        <th scope="col">Opciones</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -100,37 +108,78 @@
                         <td>{{x.title}}</td>
                         <td>{{x.creation_date}}</td>
                         <td>{{x.non_tec_emp}}</td>
-                        <td>{{x.tec_supp_emp}}</td>
-                        <td><button type="button" class="btn btn-outline-success" id="viewReportBtn" data-toggle="modal"
-                                data-target="#viewReports">Ver reporte</button></td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                        <td><button type="button" 
+                            class="btn btn-outline-success" 
+                            data-toggle="modal" 
+                            data-target="#viewReports"
+                            data-id="{{ x.id }}" 
+                            data-title="{{ x.title }}" 
+                            data-user ="{{x.tec_supp_emp}}"
+                            data-summary="{{ x.summary }}">Ver</button>
+                            <button type="button" class="btn btn-outline-warning" id="EditReportBtn" data-toggle="modal"
+                                data-target="#viewReports">Editar</button>
+                            <button type="button" 
+                            class="btn btn-outline-danger" 
+                            data-toggle="modal"
+                            data-target="#eraseReports"
+                            data-id="{{x.id}}"
+                            >Eliminar</button>
+                        </td>
+        </div>
+        </tr>
+        {% endfor %}
+        </tbody>
+        </table>
 
-            <!-- Modal -->
-            <div id="viewReports" class="modal fade" role="dialog">
-                <div class="modal-dialog">
-
-                    <!-- Modal content-->
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <button type="button" class="close" data-dismiss="modal">&times;</button>
-                            <h4 class="modal-title">Modal Header</h4>
-                        </div>
-                        <div class="modal-body">
-                            <p>Some text in the modal.</p>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                        </div>
+        <div id="viewReports" class="modal fade" role="dialog">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title">Detalle del reporte</h4>
+                        <button type="button" class="close" data-dismiss="modal">&times;</button>
                     </div>
-
+                    <div class="modal-body">
+                        <h5 id="reportTitle"></h5>
+                        <p id="reportSummary"></p>
+                    </div>
+                    <div class="modal-footer">
+                        <p>Reporte elaborado por:</p>
+                        <p id="reportUser"></p>
+                    </div>
                 </div>
             </div>
         </div>
+
+        <div id="eraseReports" class="modal fade" role="dialog">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                        <h4 class="modal-title" style="text-align: center;">Estas seguro?</h4>
+                        <div class="modal-footer" style="display: flex; justify-content: center; gap: 10px;">
+                            <button type="button" class="btn btn-outline-danger" data-dismiss="modal">Si</button>
+                            <button type="button" class="btn btn-outline-primary" data-dismiss="modal">No</button>
+                        </div>
+                </div>
+            </div>
+        </div>
+
+
+    </div>
     </div>
 
+    <script>
+        $('#viewReports').on('show.bs.modal', function (event) {
+            var button = $(event.relatedTarget); // Botón que activó el modal
+            var title = button.data('title'); // Extraer título del atributo data-title
+            var summary = button.data('summary'); // Extraer resumen del atributo data-summary
+            var user = button.data('user'); //Extraer usuaro del atributo data-user
+
+            // Actualizar el contenido del modal
+            var modal = $(this);
+            modal.find('#reportTitle').text(title);
+            modal.find('#reportSummary').text(summary);
+            modal.find('#reportUser').text(user);
+        });
+    </script>
 
 </body>
 
