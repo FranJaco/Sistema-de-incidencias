@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login
 from django.urls import reverse
 from django.contrib import messages
@@ -26,6 +26,7 @@ def login_view(request):
  #   time_now= datetime.now().strftime('%H:%M:%S')
   #  return JsonResponse({'hour': time_now}) 
 
+@login_required
 def get_employees(request, department_id):
     # Obtener los empleados del departamento seleccionado
     employees = Non_Tech_employee.objects.filter(department_id=department_id)
@@ -40,6 +41,8 @@ def get_employees(request, department_id):
 
 def home_view(request):
     return render(request, 'core/home.html')
+
+
 
 @login_required
 def add_reports(request):
@@ -79,7 +82,15 @@ def add_reports(request):
 def user_managment(request):
     return render (request, 'core/userManagment.html')
 
+@login_required
 def view_reports(request):
+    if request.method == 'POST' and 'delete_report_id' in request.POST:
+        # Eliminar reporte
+        report_id = request.POST['delete_report_id']
+        report = get_object_or_404(Report, id=report_id)
+        report.delete()
+        return JsonResponse({'success': True})
+
     reports = Report.objects.all()
 
     context = {

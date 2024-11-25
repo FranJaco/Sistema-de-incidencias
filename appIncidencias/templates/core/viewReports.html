@@ -7,7 +7,7 @@
     <title>Login</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     {% load bootstrap5 %}
@@ -108,22 +108,13 @@
                         <td>{{x.title}}</td>
                         <td>{{x.creation_date}}</td>
                         <td>{{x.non_tec_emp}}</td>
-                        <td><button type="button" 
-                            class="btn btn-outline-success" 
-                            data-toggle="modal" 
-                            data-target="#viewReports"
-                            data-id="{{ x.id }}" 
-                            data-title="{{ x.title }}" 
-                            data-user ="{{x.tec_supp_emp}}"
-                            data-summary="{{ x.summary }}">Ver</button>
+                        <td><button type="button" class="btn btn-outline-success" data-toggle="modal"
+                                data-target="#viewReports" data-id="{{ x.id }}" data-title="{{ x.title }}"
+                                data-user="{{x.tec_supp_emp}}" data-summary="{{ x.summary }}">Ver</button>
                             <button type="button" class="btn btn-outline-warning" id="EditReportBtn" data-toggle="modal"
                                 data-target="#viewReports">Editar</button>
-                            <button type="button" 
-                            class="btn btn-outline-danger" 
-                            data-toggle="modal"
-                            data-target="#eraseReports"
-                            data-id="{{x.id}}"
-                            >Eliminar</button>
+                            <button type="button" class="btn btn-outline-danger" data-toggle="modal"
+                                data-target="#eraseReports" data-id="{{x.id}}">Eliminar</button>
                         </td>
         </div>
         </tr>
@@ -153,11 +144,11 @@
         <div id="eraseReports" class="modal fade" role="dialog">
             <div class="modal-dialog">
                 <div class="modal-content">
-                        <h4 class="modal-title" style="text-align: center;">Estas seguro?</h4>
-                        <div class="modal-footer" style="display: flex; justify-content: center; gap: 10px;">
-                            <button type="button" class="btn btn-outline-danger" data-dismiss="modal">Si</button>
-                            <button type="button" class="btn btn-outline-primary" data-dismiss="modal">No</button>
-                        </div>
+                    <h4 class="modal-title" style="text-align: center;">Estas seguro?</h4>
+                    <div class="modal-footer" style="display: flex; justify-content: center; gap: 10px;">
+                        <button type="button" class="btn btn-outline-danger" id="deleteReportBtn">Si</button>
+                        <button type="button" class="btn btn-outline-primary" data-dismiss="modal">No</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -179,6 +170,46 @@
             modal.find('#reportSummary').text(summary);
             modal.find('#reportUser').text(user);
         });
+
+        $('#eraseReports').on('show.bs.modal', function (event) {
+            var button = $(event.relatedTarget); // Botón que activó el modal
+            var reportId = button.data('id'); // Obtener el ID del reporte desde el atributo data-id
+
+            // Establecer el ID del reporte en el botón de confirmación
+            $('#deleteReportBtn').data('report-id', reportId);  // Usar 'report-id' en vez de 'id'
+        });
+
+        // Cuando el usuario haga clic en "Sí" para confirmar la eliminación
+        $('#deleteReportBtn').on('click', function () {
+            var reportId = $(this).data('report-id');  // Obtener el ID del reporte desde el botón
+            console.log('ID del reporte a eliminar:', reportId);  // Verifica que el ID sea correcto
+
+            $.ajax({
+                url: '/viewReports/',  // Mismo URL de viewReports
+                type: 'POST',
+                data: {
+                    'csrfmiddlewaretoken': '{{ csrf_token }}',  // Asegúrate de pasar el token CSRF
+                    'delete_report_id': reportId,  // Enviar el ID del reporte a eliminar
+                },
+                success: function (response) {
+                    if (response.success) {
+                        $('#eraseReports').modal('hide');  // Cerrar el modal
+                        location.reload();  // Recargar la página para reflejar el cambio
+                    } else {
+                        alert('Hubo un error al eliminar el reporte');
+                    }
+                },
+                error: function (xhr, errmsg, err) {
+                    alert('Error al eliminar el reporte');
+                    console.error('Error:', errmsg);  // Para depuración
+                }
+            });
+        });
+
+
+
+
+
     </script>
 
 </body>
