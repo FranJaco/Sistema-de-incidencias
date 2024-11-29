@@ -22,9 +22,6 @@ def login_view(request):
             messages.error(request, 'Usuario o contraseña incorrectos.')
     return render(request, 'core/login.html')
 
-# def get_hour(request):
- #   time_now= datetime.now().strftime('%H:%M:%S')
-  #  return JsonResponse({'hour': time_now}) 
 
 @login_required
 def get_employees(request, department_id):
@@ -46,12 +43,8 @@ def home_view(request):
 
 @login_required
 def add_reports(request):
-    departments = Department.objects.all()
-    nte = Non_Tech_employee.objects.all()
-
     if request.method == 'POST':
-        # Si el formulario fue enviado, manejar la creación del reporte
-        data = json.loads(request.body)  # Recibimos los datos en formato JSON
+        data = json.loads(request.body)
 
         title = data.get('title')
         summary = data.get('summary')
@@ -61,23 +54,26 @@ def add_reports(request):
         if not title or not summary or not department_id or not employee_id:
             return JsonResponse({'success': False, 'error': 'Todos los campos son necesarios.'})
 
-        # Crear el reporte en la base de datos
         try:
-            report = Report.objects.create(
+            # Crear el reporte con el usuario autenticado
+            report = Report(
                 title=title,
                 summary=summary,
-                tec_supp_emp=request.user,  # El usuario autenticado es el que crea el reporte
+                tec_supp_emp=request.user,  # Usuario actual
                 non_tec_emp_id=employee_id
             )
+            report.save()
             return JsonResponse({'success': True})
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
 
+    # Renderizar formulario en GET
     context = {
-        'departments': departments,
-        'employees': nte,
+        'departments': Department.objects.all(),
+        'employees': Non_Tech_employee.objects.all(),
     }
-    return render (request, 'core/addReports.html', context)
+    return render(request, 'core/addReports.html', context)
+
 
 def user_managment(request):
     return render (request, 'core/userManagment.html')

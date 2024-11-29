@@ -24,5 +24,5 @@ urlpatterns = [
     path('addReports/', add_reports,  name='addReports'),
     path('viewReports/', view_reports, name='viewReports'),
     path('userManagment/', user_managment, name='userManagment'),
-    path('get_employees/<int:department_id>/', get_employees, name='get_employees'),
+    path('get_employees/<str:department_id>/', get_employees, name='get_employees'),
 ]
