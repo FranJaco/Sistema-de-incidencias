@@ -3,10 +3,15 @@ from django.contrib.auth import authenticate, login
 from django.urls import reverse
 from django.contrib import messages
 from django.http import JsonResponse
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.db import IntegrityError
+from django.core.paginator import Paginator
 from django.views.decorators.csrf import csrf_exempt
-from .models import Department, Non_Tech_employee, Report
+from .models import Department, Non_Tech_employee, Report, Tech_support_employee
 import json
+
+def admin_required(user):
+    return user.is_authenticated and user.is_admin
 
 # Create your views here.
 def login_view(request):
@@ -74,9 +79,80 @@ def add_reports(request):
     }
     return render(request, 'core/addReports.html', context)
 
-
+@user_passes_test(admin_required)
+@login_required
 def user_managment(request):
-    return render (request, 'core/userManagment.html')
+    if request.method == 'POST':
+        try:
+            # Cargar los datos del cuerpo de la solicitud
+            data = json.loads(request.body)
+            
+            # Verificar la acción
+            if data.get('action') == "create_new_user":
+                # Obtener y validar datos
+                name = data.get('name')
+                lastname = data.get('lName')
+                username = data.get('uName')
+                password = data.get('password')
+                isAdmin = str(data.get('isAdmin', False)).lower() in ['true', '1']
+
+                if not name or not lastname or not username or not password:
+                    return JsonResponse({'success': False, 'error': 'Todos los campos son necesarios.'})
+
+                if len(password) < 8:
+                    return JsonResponse({'success': False, 'error': 'La contraseña debe tener al menos 8 caracteres.'})
+
+                if not username.isalnum():
+                    return JsonResponse({'success': False, 'error': 'El nombre de usuario solo puede contener letras y números.'})
+
+                # Crear usuario utilizando el manager
+                user = Tech_support_employee.objects.create_user(
+                    pile_name=name,
+                    sur_name=lastname,
+                    username=username,
+                    password=password
+                )
+                user.is_admin = isAdmin
+                user.save()
+
+                return JsonResponse({'success': True})
+            
+            elif data.get('action') == "delete_user":
+                user_id = data.get('userID')  # Obtener el id del usuario a eliminar
+                if not user_id:
+                    return JsonResponse({'success': False, 'error': 'Se debe proporcionar un ID de usuario.'})
+
+                # Verificar si el usuario existe
+                user = Tech_support_employee.objects.filter(id=user_id).first()
+                if not user:
+                    return JsonResponse({'success': False, 'error': 'Usuario no encontrado.'})
+
+                # Eliminar el usuario
+                user.delete()
+
+                return JsonResponse({'success': True, 'message': 'Usuario eliminado exitosamente.'})
+
+        except IntegrityError:
+            return JsonResponse({'success': False, 'error': 'El nombre de usuario ya existe.'})
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'error': 'Datos inválidos en la solicitud.'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': f'Error desconocido: {str(e)}'})
+        
+
+
+    # Lógica para GET
+    users_list = Tech_support_employee.objects.all()
+    paginator = Paginator(users_list, 10)
+    page_number = request.GET.get('page')
+    users = paginator.get_page(page_number)
+
+    context = {
+        'users': users,
+    }
+    return render(request, 'core/userManagment.html', context)
+
+
 
 @login_required
 def view_reports(request):

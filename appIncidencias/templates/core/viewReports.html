@@ -18,12 +18,14 @@
         .background-container {
             background-color: rgb(153, 152, 152);
             height: 100%;
-            width: calc(100% - 33vh); /* Esto asegura que el contenedor ocupe el 100% del ancho menos el ancho del menú */
+            width: calc(100% - 33vh);
+            /* Esto asegura que el contenedor ocupe el 100% del ancho menos el ancho del menú */
             position: absolute;
             top: 0;
-            left: 33vh; /* Empuja el contenedor de fondo para que comience después del menú */
+            left: 33vh;
+            /* Empuja el contenedor de fondo para que comience después del menú */
         }
-    
+
         .left-menu {
             position: absolute;
             height: 100%;
@@ -31,9 +33,10 @@
             background-color: rgb(56, 107, 2);
             color: white;
             top: 0;
-            left: 0; /* Asegura que el menú se quede en el borde izquierdo */
+            left: 0;
+            /* Asegura que el menú se quede en el borde izquierdo */
         }
-    
+
         .main-container {
             background-color: beige;
             width: 150vh;
@@ -84,7 +87,7 @@
             <li><a href="{% url 'home' %}">Inicio</a></li>
             <li><a href="{% url 'addReports' %}">Generar nuevo reporte</a></li>
             <li><a class="active">Ver reportes anteriores</a></li>
-            <li><a href="{% url 'userManagment' %}">Administrar usuarios</a></li>
+            {% if user.is_admin %} <li><a href="{% url 'userManagment' %}">Administrar usuarios</a></li>{% endif %}
         </ul>
     </div>
 
@@ -148,8 +151,8 @@
                 <div class="modal-content">
                     <h4 class="modal-title" style="text-align: center;">Estas seguro?</h4>
                     <div class="modal-footer" style="display: flex; justify-content: center; gap: 10px;">
-                        <button type="button" class="btn btn-outline-danger" id="deleteReportBtn">Si</button>
-                        <button type="button" class="btn btn-outline-primary" data-dismiss="modal">No</button>
+                        <button type="button" class="btn btn-outline-primary" data-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-outline-danger" id="deleteReportBtn">Eliminar</button>
                     </div>
                 </div>
             </div>

@@ -91,7 +91,7 @@
             <li><a href="{% url 'home' %}">Inicio</a></li>
             <li><a class="active">Generar nuevo reporte</a></li>
             <li><a href="{% url 'viewReports' %}">Ver reportes anteriores</a></li>
-            <li><a href="{% url 'userManagment' %}">Administrar usuarios</a></li>
+            {% if user.is_admin %} <li><a href="{% url 'userManagment' %}">Administrar usuarios</a></li>{% endif %}
         </ul>
     </div>
 

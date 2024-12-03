@@ -6,20 +6,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     {% load bootstrap5 %}
     {% bootstrap_css %}
     {% bootstrap_javascript %}
     {% load static %}
+    {% csrf_token %}
     <style>
         .background-container {
             background-color: rgb(153, 152, 152);
             height: 100%;
-            width: calc(100% - 33vh); /* Esto asegura que el contenedor ocupe el 100% del ancho menos el ancho del menú */
+            width: calc(100% - 33vh);
+            /* Esto asegura que el contenedor ocupe el 100% del ancho menos el ancho del menú */
             position: absolute;
             top: 0;
-            left: 33vh; /* Empuja el contenedor de fondo para que comience después del menú */
+            left: 33vh;
+            /* Empuja el contenedor de fondo para que comience después del menú */
         }
-    
+
         .left-menu {
             position: absolute;
             height: 100%;
@@ -27,9 +35,10 @@
             background-color: rgb(56, 107, 2);
             color: white;
             top: 0;
-            left: 0; /* Asegura que el menú se quede en el borde izquierdo */
+            left: 0;
+            /* Asegura que el menú se quede en el borde izquierdo */
         }
-    
+
         .main-container {
             background-color: beige;
             width: 80%;
@@ -39,8 +48,17 @@
             padding: 30px;
             position: relative;
         }
-        
-        .left-menu h1{
+
+        .table th,
+        .table td {
+            text-align: center;
+        }
+
+        .table button {
+            width: 80px;
+        }
+
+        .left-menu h1 {
             padding: 15px;
         }
 
@@ -59,6 +77,12 @@
         .left-menu a:hover:not(.active) {
             background-color: #555;
             color: black;
+        }
+
+        .userBtnDiv div {
+            background-color: aqua;
+            width: 100px;
+
         }
     </style>
 </head>
@@ -79,9 +103,218 @@
     <div class="background-container">
         <div class="main-container">
             <h1>Hola, {{ user }}, te encuenteas en Administrar usuarios</h1>
+
+            <div id="userBtnDiv">
+                <button type="button" class="btn btn-outline-primary" id="newUserBtn" data-toggle="modal"
+                    data-target="#createNewUser"> Crear nuevo usuario</button>
+            </div>
+
+            <table class="table table-striped" name="users">
+                <thead>
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Nombre:</th>
+                        <th scope="col">Usuario:</th>
+                        <th scope="col">Es administrador:</th>
+                        <th scope="col">Opciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                    {% for x in users %}
+                    <tr>
+                        <th scope="row">{{x.id}}</th>
+                        <td>{{x}}</td>
+                        <td>{{x.username}}</td>
+                        <td>{{x.is_admin}}</td>
+                        <td>
+                            <button {% if x.id == user.id %} disabled {% endif %} type="button"
+                                class="btn btn-outline-danger" data-toggle="modal" id="showEraseModalBtn"
+                                data-target="#eraseUser" data-id="{{x.id}}" data-action="delete-user"
+                                data-name="{{x.pile_name}} {{x.sur_name}}">Eliminar</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <div class="modal" tabindex="-1" id="eraseUser">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <h5 class="modal-title" style="text-align: center;">Eliminar Usuario</h5>
+                        <p class="modal-body" style="text-align: center;">¿Estás seguro de que deseas eliminar al
+                            usuario <span id="name"></span>?</p>
+                        <div class="modal-footer" style="display: flex; justify-content: center; gap: 10px;">
+                            <button type="button" class="btn btn-outline-primary" data-dismiss="modal">Cancelar</button>
+                            <button type="button" class="btn btn-outline-danger" id="confirmDeleteBtn">Eliminar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+
+            <div id="createNewUser" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="modalTitle"
+                aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="modalTitle">Crear Nuevo Usuario</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                aria-label="Cerrar"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label for="nombre" class="form-label">Nombre:</label>
+                                <input type="text" id="name-txt" name="nombre" placeholder="Nombre" class="form-control"
+                                    required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="apellido" class="form-label">Apellido:</label>
+                                <input type="text" id="lastname-txt" name="apellido" placeholder="Apellido"
+                                    class="form-control" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="username" class="form-label">Nombre de Usuario:</label>
+                                <input type="text" id="username-txt" name="username" placeholder="Nombre de usuario"
+                                    class="form-control" autocomplete="off" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Contraseña:</label>
+                                <input type="password" id="password-txt" name="password" placeholder="Contraseña"
+                                    class="form-control" autocomplete="new-password" required>
+                            </div>
+                            <div class="form-check mb-3">
+                                <input type="checkbox" id="adminCheckbox" class="form-check-input">
+                                <label for="adminCheckbox" class="form-check-label">Establecer como
+                                    administrador</label>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-success" id="createUserBtn">Crear
+                                usuario</button>
+                            <button type="button" class="btn btn-outline-danger"
+                                data-bs-dismiss="modal">Cancelar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                    {% if users.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ users.previous_page_number }}">Anterior</a>
+                    </li>
+                    {% endif %}
+                    {% for num in users.paginator.page_range %}
+                    <li class="page-item {% if users.number == num %}active{% endif %}">
+                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                    </li>
+                    {% endfor %}
+                    {% if users.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ users.next_page_number }}">Siguiente</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+
         </div>
     </div>
 
+
+    <script>
+        // Configurar el botón para abrir el modal y asignar el ID del usuario a eliminar
+        document.querySelectorAll('.btn-outline-danger[data-action="delete-user"]').forEach(button => {
+            button.addEventListener('click', function (event) {
+                var name = button.getAttribute('data-name');  // Obtener el nombre desde el botón
+
+                document.querySelector('#eraseUser #name').textContent = name;  // Asignar el nombre al modal
+
+                var user_id = button.getAttribute('data-id');  // Obtener el ID del usuario desde el atributo data-id
+
+                // Asignar el ID del usuario al botón de confirmación
+                document.getElementById('confirmDeleteBtn').setAttribute('data-user-id', user_id);
+            });
+        });
+
+        // Llamada cuando se confirma la eliminación del usuario
+        document.getElementById('confirmDeleteBtn').addEventListener('click', function () {
+            var userID = document.getElementById('confirmDeleteBtn').getAttribute('data-user-id');  // Obtener el ID del usuario
+
+            fetch('{% url "userManagment" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}',  // Token CSRF necesario para la seguridad
+                },
+                body: JSON.stringify({
+                    action: "delete_user",  // La acción a ejecutar en el servidor
+                    userID: userID,         // El ID del usuario a eliminar
+                })
+            })
+                .then(response => response.json())  // Convertir la respuesta en JSON
+                .then(data => {
+                    if (data.success) {
+                        // Si la eliminación fue exitosa, cerrar el modal y recargar la página
+                        alert("Usuario eliminado exitosamente.");
+                        location.reload();  // Recargar la página para ver los cambios
+                    } else {
+                        alert(data.error);  // Mostrar el mensaje de error si hubo un problema
+                    }
+                })
+                .catch(error => {
+                    alert("Error al eliminar el usuario: " + error);
+                });
+        });
+
+
+        document.getElementById('createUserBtn').addEventListener('click', function () {
+            // Recoger los valores del formulario
+            var name = document.getElementById('name-txt').value;
+            var lName = document.getElementById('lastname-txt').value;
+            var uName = document.getElementById('username-txt').value;
+            var password = document.getElementById('password-txt').value;
+            var isAdmin = document.getElementById('adminCheckbox').checked;
+
+
+            // Comprobar si todos los campos están llenos
+            if (!name || !lName || !uName || !password) {
+                alert("Por favor, complete todos los campos.");
+                return;
+            }
+
+
+            // Realizar la solicitud AJAX para guardar el usuario
+            fetch('{% url "userManagment" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}',  // Importante para el CSRF token en Django
+                },
+                body: JSON.stringify({
+                    action: "create_new_user",
+                    name: name,
+                    lName: lName,
+                    uName: uName,
+                    password: password,
+                    isAdmin :isAdmin,
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert("Usuario generado con éxito.");
+                        location.reload();
+
+                    } else {
+                        alert("Hubo un error al generar el reporte: " + data.error);
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        });
+    </script>
 
 </body>
 
