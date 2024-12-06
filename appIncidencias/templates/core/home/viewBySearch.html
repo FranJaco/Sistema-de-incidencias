@@ -4,10 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ver reportes anteriores</title>
+    <title>Ver reportes por busqueda</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-
-    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     {% load bootstrap5 %}
@@ -19,11 +18,9 @@
             background-color: rgb(153, 152, 152);
             height: 100%;
             width: calc(100% - 33vh);
-            /* Esto asegura que el contenedor ocupe el 100% del ancho menos el ancho del menú */
             position: absolute;
             top: 0;
             left: 33vh;
-            /* Empuja el contenedor de fondo para que comience después del menú */
         }
 
         .left-menu {
@@ -59,6 +56,10 @@
             padding: 15px;
         }
 
+        #times {
+            width: 25vh;
+        }
+
         .left-menu a {
             display: block;
             color: white;
@@ -76,7 +77,9 @@
             color: black;
         }
 
-        
+        #reports-table {
+            display: none;
+        }
     </style>
 </head>
 
@@ -86,115 +89,139 @@
     <div class="left-menu">
         <h1>Sistema de reportes de incidencias</h1>
         <ul>
-            <li><a href="{% url 'home' %}">Inicio</a></li>
+            <li><a class="active">Inicio</a></li>
             <li><a href="{% url 'addReports' %}">Generar nuevo reporte</a></li>
-            <li><a class="active">Ver reportes anteriores</a></li>
+            <li><a href="{% url 'viewReports' %}">Ver reportes anteriores</a></li>
             {% if user.is_admin %} <li><a href="{% url 'userManagment' %}">Administrar usuarios</a></li>{% endif %}
         </ul>
     </div>
 
     <div class="background-container">
         <div class="main-container">
-            <h1>Hola, {{ user }}, te encuenteas en Ver reportes anteriores</h1>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>Hola, {{ user }}, te encuentras en el buscar reportes</h1>
+                <a href="{% url 'home' %}" class="btn btn-outline-success">
+                    <i class="bi bi-arrow-left-circle"></i> Regresar a Inicio
+                </a>
+            </div>
 
-            <table class="table table-striped" name="reports">
+
+            <div class="select-dep">
+                <input type="search" id="search">
+            </div>
+
+            <table class="table table-striped" name="reports" id="reports-table">
                 <thead>
                     <tr>
                         <th scope="col">#</th>
-                        <th scope="col">Titulo:</th>
-                        <th scope="col">Fecha de creacion:</th>
+                        <th scope="col">Título:</th>
+                        <th scope="col">Fecha de creación:</th>
                         <th scope="col">Empleado asistido:</th>
                         <th scope="col">Opciones</th>
                     </tr>
                 </thead>
                 <tbody>
+                </tbody>
+            </table>
 
-                    {% for x in reports %}
-                    <tr>
-                        <th scope="row">{{x.id}}</th>
-                        <td>{{x.title}}</td>
-                        <td>{{x.creation_date}}</td>
-                        <td>{{x.non_tec_emp}}</td>
-                        <td><button type="button" class="btn btn-outline-success" data-toggle="modal"
-                                data-target="#viewReports" data-id="{{ x.id }}" data-title="{{ x.title }}"
-                                data-user="{{x.tec_supp_emp}}" data-summary="{{ x.summary }}"
-                                data-time="{{ x.resolution_time}}">Ver</button>
-                            <button type="button" class="btn btn-outline-warning" id="EditReportBtn" data-toggle="modal"
-                                data-target="#viewReports">Editar</button>
-                            <button type="button" class="btn btn-outline-danger" data-toggle="modal"
-                                data-target="#eraseReports" data-id="{{x.id}}">Eliminar</button>
-                        </td>
-        </div>
-        </tr>
-        {% endfor %}
-        </tbody>
-        </table>
+            <div id="viewReports" class="modal fade" role="dialog">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h4 class="modal-title">Detalle del reporte</h4>
+                            <button type="button" class="close" data-dismiss="modal">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <h5 id="reportTitle"></h5>
+                            <p id="reportSummary"></p>
+                            <p><span>Tiempo estimado de resolucion: </span><span id="reportTime"></span></p>
 
-        <div id="viewReports" class="modal fade" role="dialog">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h4 class="modal-title">Detalle del reporte</h4>
-                        <button type="button" class="close" data-dismiss="modal">&times;</button>
-                    </div>
-                    <div class="modal-body">
-                        <h5 id="reportTitle"></h5>
-                        <p id="reportSummary"></p>
-                        <p><span>Tiempo estimado de resolucion: </span><span id="reportTime"></span></p>
+                        </div>
+                        <div class="modal-footer">
+                            <p>Reporte elaborado por:</p>
+                            <p id="reportUser"></p>
 
-                    </div>
-                    <div class="modal-footer">
-                        <p>Reporte elaborado por:</p>
-                        <p id="reportUser"></p>
-
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div id="eraseReports" class="modal fade" role="dialog">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <h4 class="modal-title" style="text-align: center;">Estas seguro?</h4>
-                    <div class="modal-footer" style="display: flex; justify-content: center; gap: 10px;">
-                        <button type="button" class="btn btn-outline-primary" data-dismiss="modal">Cancelar</button>
-                        <button type="button" class="btn btn-outline-danger" id="deleteReportBtn">Eliminar</button>
+            <div id="eraseReports" class="modal fade" role="dialog">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <h4 class="modal-title" style="text-align: center;">Estas seguro?</h4>
+                        <div class="modal-footer" style="display: flex; justify-content: center; gap: 10px;">
+                            <button type="button" class="btn btn-outline-primary" data-dismiss="modal">Cancelar</button>
+                            <button type="button" class="btn btn-outline-danger" id="deleteReportBtn">Eliminar</button>
+                        </div>
                     </div>
                 </div>
             </div>
+
         </div>
-
-
-    </div>
     </div>
 
     <script>
+        document.getElementById("search").addEventListener("change", function () {
+            var titleId = this.value;
+
+            // Mostrar la tabla
+            var table = document.getElementById("reports-table");
+            table.style.display = "table";
+
+            // Realizar solicitud AJAX
+            fetch(`/core/home/viewBySearch?title_id=${titleId}`, {
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest",
+                },
+            })
+                .then((response) => response.json())
+                .then((data) => {
+                    var tableBody = document.querySelector("#reports-table tbody");
+                    tableBody.innerHTML = ""; // Limpiar contenido previo
+
+                    data.reports.forEach((report) => {
+                        var row = document.createElement("tr");
+                        row.innerHTML = `
+                    <th scope="row">${report.id}</th>
+                    <td>${report.title}</td>
+                    <td>${report.creation_date}</td>
+                    <td>${report.non_tec_emp}</td>
+                    <td>
+                        <button type="button" class="btn btn-outline-success" data-toggle="modal"
+                            data-target="#viewReports" data-id="${report.id}" data-title="${report.title}"
+                            data-user="${report.tec_supp_emp}" data-summary="${report.summary}" data-time="${report.resolution_time}">Ver</button>
+                        <button type="button" class="btn btn-outline-warning" id="EditReportBtn" data-toggle="modal"
+                            data-target="#viewReports">Editar</button>
+                        <button type="button" class="btn btn-outline-danger" data-toggle="modal"
+                            data-target="#eraseReports" data-id="${report.id}">Eliminar</button>
+                    </td>
+                `;
+                        tableBody.appendChild(row);
+                    });
+                })
+                .catch((error) => {
+                    console.error("Error al obtener los reportes:", error);
+                });
+        });
+
+
+
         $('#viewReports').on('show.bs.modal', function (event) {
             var button = $(event.relatedTarget); // Botón que activó el modal
             var title = button.data('title'); // Extraer título del atributo data-title
             var summary = button.data('summary'); // Extraer resumen del atributo data-summary
             var user = button.data('user'); //Extraer usuaro del atributo data-user
-            var rawTime = button.data('time'); // Tiempo en formato "0:02:00"
+            var time = button.data('time');
 
-            // Función para convertir "0:02:00" a formato legible
-            function formatTime(time) {
-                if (!time) return "Sin resolver"; // Si no hay tiempo registrado
-                var parts = time.split(':'); // Divide el tiempo en horas, minutos y segundos
-                var hours = parseInt(parts[0]);
-                var minutes = parseInt(parts[1]);
-                var seconds = parseInt(parts[2]);
-                return `${hours}h ${minutes}m ${seconds}s`;
-            }
-
-            var formattedTime = formatTime(rawTime);
-
+            console.log(time)
 
             // Actualizar el contenido del modal
             var modal = $(this);
             modal.find('#reportTitle').text(title);
             modal.find('#reportSummary').text(summary);
             modal.find('#reportUser').text(user);
-            modal.find('#reportTime').text(formattedTime);
+            modal.find('#reportTime').text(time);
         });
 
         $('#eraseReports').on('show.bs.modal', function (event) {
@@ -231,8 +258,6 @@
                 }
             });
         });
-
-
 
 
 

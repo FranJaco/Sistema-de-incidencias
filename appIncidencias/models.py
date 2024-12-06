@@ -95,6 +95,7 @@ class Report(models.Model):
     creation_date = models.DateTimeField(editable=False, default=datetime.now)
     tec_supp_emp = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     non_tec_emp = models.ForeignKey(Non_Tech_employee, on_delete=models.CASCADE)
+    resolution_time = models.DurationField(null=True, blank=True, help_text="Duración que tomó resolver la incidencia")
 
     id = models.CharField(max_length=50, primary_key=True, editable=False)
 

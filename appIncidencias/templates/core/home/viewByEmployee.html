@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ver reportes por empleado</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    {% load bootstrap5 %}
+    {% bootstrap_css %}
+    {% bootstrap_javascript %}
+    {% load static %}
+    <style>
+        .background-container {
+            background-color: rgb(153, 152, 152);
+            height: 100%;
+            width: calc(100% - 33vh);
+            position: absolute;
+            top: 0;
+            left: 33vh;
+        }
+
+        .left-menu {
+            position: absolute;
+            height: 100%;
+            width: 33vh;
+            background-color: rgb(56, 107, 2);
+            color: white;
+            top: 0;
+            left: 0;
+            /* Asegura que el menú se quede en el borde izquierdo */
+        }
+
+        .main-container {
+            background-color: beige;
+            width: 150vh;
+            height: 80vh;
+            margin: 60px auto;
+            padding: 30px;
+            position: relative;
+        }
+
+        .table th,
+        .table td {
+            text-align: center;
+        }
+
+        .table button {
+            width: 80px;
+        }
+
+        .left-menu h1 {
+            padding: 15px;
+        }
+
+        #departments {
+            width: 25vh;
+        }
+
+        #employees {
+            width: 25vh;
+        }
+
+        .select-container {
+            display: flex;
+            gap: 20px;
+        }
+
+        .left-menu a {
+            display: block;
+            color: white;
+            padding: 16px;
+            text-decoration: none;
+        }
+
+        .left-menu a.active {
+            background-color: #ececece2;
+            color: black;
+        }
+
+        .left-menu a:hover:not(.active) {
+            background-color: #555;
+            color: black;
+        }
+
+        #reports-table {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+
+    <div class="left-menu">
+        <h1>Sistema de reportes de incidencias</h1>
+        <ul>
+            <li><a class="active">Inicio</a></li>
+            <li><a href="{% url 'addReports' %}">Generar nuevo reporte</a></li>
+            <li><a href="{% url 'viewReports' %}">Ver reportes anteriores</a></li>
+            {% if user.is_admin %} <li><a href="{% url 'userManagment' %}">Administrar usuarios</a></li>{% endif %}
+        </ul>
+    </div>
+
+    <div class="background-container">
+        <div class="main-container">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>Hola, {{ user }}, te encuentras en el ver reportes por empleados</h1>
+                <a href="{% url 'home' %}" class="btn btn-outline-success">
+                    <i class="bi bi-arrow-left-circle"></i> Regresar a Inicio
+                </a>
+            </div>
+
+            <div class="select-container">
+                <div class="select-dep">
+                    <select name="departments" id="departments" class="form-select" aria-label="Default select example">
+                        <option selected disabled value style="color: grey;"> -- Elige un departamento -- </option>
+                        {% for x in departments %}
+                        <option value="{{ x.id }}">{{ x }}</option>
+                        {% empty %}
+                        <option disabled value="">No hay departamentos disponibles</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="select-emp" id="employee-container" style="display: none;">
+                    <select name="employees" id="employees" class="form-select">
+                        <option selected disabled value style="color: grey;"> -- Elige el empleado que solicitó
+                            asistencia
+                            -- </option>
+                    </select>
+                </div>
+            </div>
+
+            <table class="table table-striped" name="reports" id="reports-table">
+                <thead>
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Título:</th>
+                        <th scope="col">Fecha de creación:</th>
+                        <th scope="col">Empleado asistido:</th>
+                        <th scope="col">Opciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+
+            <div id="viewReports" class="modal fade" role="dialog">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h4 class="modal-title">Detalle del reporte</h4>
+                            <button type="button" class="close" data-dismiss="modal">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <h5 id="reportTitle"></h5>
+                            <p id="reportSummary"></p>
+                            <p><span>Tiempo estimado de resolucion: </span><span id="reportTime"></span></p>
+
+                        </div>
+                        <div class="modal-footer">
+                            <p>Reporte elaborado por:</p>
+                            <p id="reportUser"></p>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="eraseReports" class="modal fade" role="dialog">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <h4 class="modal-title" style="text-align: center;">Estas seguro?</h4>
+                        <div class="modal-footer" style="display: flex; justify-content: center; gap: 10px;">
+                            <button type="button" class="btn btn-outline-primary" data-dismiss="modal">Cancelar</button>
+                            <button type="button" class="btn btn-outline-danger" id="deleteReportBtn">Eliminar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('departments').addEventListener('change', function () {
+            var departmentId = this.value;
+            var employeeContainer = document.getElementById('employee-container');
+
+            if (departmentId) {
+                // Si se ha seleccionado un departamento, mostramos el div de empleados
+                employeeContainer.style.display = 'block';
+
+                // Hacer una petición AJAX para obtener los empleados de este departamento
+                fetch('/get_employees/' + departmentId + '/')
+                    .then(response => response.json())
+                    .then(data => {
+                        var employeeSelect = document.getElementById('employees');
+                        employeeSelect.innerHTML = '<option selected value> -- Elige el empleado -- </option>';
+                        data.employees.forEach(function (employee) {
+                            var option = document.createElement('option');
+                            option.value = employee.id;
+                            option.textContent = employee.name;
+                            employeeSelect.appendChild(option);
+                        });
+                    })
+                    .catch(error => console.error('Error al obtener los empleados:', error));
+            } else {
+                // Si no se ha seleccionado un departamento, ocultamos el div de empleados
+                employeeContainer.style.display = 'none';
+
+                // Limpiar el select de empleados para evitar que muestre opciones de un departamento anterior
+                document.getElementById('employees').innerHTML = '<option selected value> -- Elige el empleado -- </option>';
+            }
+        });
+
+
+        document.getElementById('employees').addEventListener('change', function () {
+            var employeeId = this.value; // Obtén el id del usuario seleccionado
+
+            // Mostrar la tabla
+            var table = document.getElementById('reports-table');
+            table.style.display = 'table';
+
+            // Realizar la solicitud AJAX
+            fetch(`/core/home/viewByEmployee?employee_id=${employeeId}`, { // Cambiar el endpoint
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    // Actualizar contenido de la tabla
+                    var tableBody = document.querySelector("#reports-table tbody");
+                    tableBody.innerHTML = ""; // Limpiar el contenido previo
+
+                    data.reports.forEach(report => {
+                        var row = document.createElement("tr");
+                        row.innerHTML = `
+                    <th scope="row">${report.id}</th>
+                    <td>${report.title}</td>
+                    <td>${report.creation_date}</td>
+                    <td>${report.non_tec_emp}</td>
+                    <td>
+                        <button type="button" class="btn btn-outline-success" data-toggle="modal"
+                            data-target="#viewReports" data-id="${report.id}" data-title="${report.title}"
+                            data-user="${report.tec_supp_emp}" data-summary="${report.summary}" data-time="${report.resolution_time}">Ver</button>
+                        <button type="button" class="btn btn-outline-warning" id="EditReportBtn" data-toggle="modal"
+                            data-target="#viewReports">Editar</button>
+                        <button type="button" class="btn btn-outline-danger" data-toggle="modal"
+                            data-target="#eraseReports" data-id="${report.id}">Eliminar</button>
+                    </td>
+                `;
+                        tableBody.appendChild(row);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error al obtener los reportes:', error);
+                });
+        });
+
+        $('#viewReports').on('show.bs.modal', function (event) {
+            var button = $(event.relatedTarget); // Botón que activó el modal
+            var title = button.data('title'); // Extraer título del atributo data-title
+            var summary = button.data('summary'); // Extraer resumen del atributo data-summary
+            var user = button.data('user'); //Extraer usuaro del atributo data-user
+            var time = button.data('time');
+
+            console.log(time)
+
+            // Actualizar el contenido del modal
+            var modal = $(this);
+            modal.find('#reportTitle').text(title);
+            modal.find('#reportSummary').text(summary);
+            modal.find('#reportUser').text(user);
+            modal.find('#reportTime').text(time);
+        });
+
+        $('#eraseReports').on('show.bs.modal', function (event) {
+            var button = $(event.relatedTarget); // Botón que activó el modal
+            var reportId = button.data('id'); // Obtener el ID del reporte desde el atributo data-id
+
+            // Establecer el ID del reporte en el botón de confirmación
+            $('#deleteReportBtn').data('report-id', reportId);  // Usar 'report-id' en vez de 'id'
+        });
+
+        // Cuando el usuario haga clic en "Sí" para confirmar la eliminación
+        $('#deleteReportBtn').on('click', function () {
+            var reportId = $(this).data('report-id');  // Obtener el ID del reporte desde el botón
+            console.log('ID del reporte a eliminar:', reportId);  // Verifica que el ID sea correcto
+
+            $.ajax({
+                url: '/viewReports/',  // Mismo URL de viewReports
+                type: 'POST',
+                data: {
+                    'csrfmiddlewaretoken': '{{ csrf_token }}',  // Asegúrate de pasar el token CSRF
+                    'delete_report_id': reportId,  // Enviar el ID del reporte a eliminar
+                },
+                success: function (response) {
+                    if (response.success) {
+                        $('#eraseReports').modal('hide');  // Cerrar el modal
+                        location.reload();  // Recargar la página para reflejar el cambio
+                    } else {
+                        alert('Hubo un error al eliminar el reporte');
+                    }
+                },
+                error: function (xhr, errmsg, err) {
+                    alert('Error al eliminar el reporte');
+                    console.error('Error:', errmsg);  // Para depuración
+                }
+            });
+        });
+
+
+
+    </script>
+
+</body>
+
+</html>

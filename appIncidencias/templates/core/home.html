@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
+    <title>Inicio</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     {% load bootstrap5 %}
@@ -15,12 +15,12 @@
         .background-container {
             background-color: rgb(153, 152, 152);
             height: 100%;
-            width: calc(100% - 33vh); /* Esto asegura que el contenedor ocupe el 100% del ancho menos el ancho del menú */
+            width: calc(100% - 33vh);
             position: absolute;
             top: 0;
-            left: 33vh; /* Empuja el contenedor de fondo para que comience después del menú */
+            left: 33vh;
         }
-    
+
         .left-menu {
             position: absolute;
             height: 100%;
@@ -28,20 +28,43 @@
             background-color: rgb(56, 107, 2);
             color: white;
             top: 0;
-            left: 0; /* Asegura que el menú se quede en el borde izquierdo */
+            left: 0;
         }
-    
+
         .main-container {
             background-color: beige;
             width: 80%;
             height: 80vh;
             max-width: 1000px;
+            min-width: 50vh;
             margin: 60px auto;
             padding: 30px;
             position: relative;
         }
-        
-        .left-menu h1{
+
+        .main-container a {
+            color: white;
+            padding: 16px;
+            text-decoration: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            vertical-align: middle;
+            text-align: center;
+        }
+
+        .main-container a.active {
+            background-color: #ececece2;
+            color: black;
+        }
+
+        .main-container a:hover:not(.active) {
+            background-color: #555;
+            color: black;
+        }
+
+        .left-menu h1 {
             padding: 15px;
         }
 
@@ -62,15 +85,61 @@
             color: black;
         }
 
-        #reloj {
-            font-size: 48px;
-            font-family: Arial, sans-serif;
+        .button-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            justify-items: center;
+            align-items: center;
+            margin-top: 50px;
+            width: 100%;
+        }
+
+        .bigbtn {
+            background-color: #3b7a57;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 15px;
+            font-size: 1rem;
+            text-align: center;
+            white-space: normal;
+            overflow-wrap: break-word;
+            height: 90px;
+            width: 75%;
+            min-width: 200px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .bigbtn:hover {
+            background-color: #2c5a40;
+        }
+
+        .bigbtn:active {
+            transform: scale(0.98);
+        }
+
+        .bigbtn i {
+            margin-bottom: 8px;
+            font-size: 1.2rem;
+        }
+
+        @media (max-width: 768px) {
+            .bigbtn {
+                width: 100%;
+                padding: 10px;
+            }
+
+            .button-container {
+                gap: 15px;
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 
 <body>
-
 
     <div class="left-menu">
         <h1>Sistema de reportes de incidencias</h1>
@@ -85,6 +154,26 @@
     <div class="background-container">
         <div class="main-container">
             <h1>Hola, {{ user }}, te encuentras en el inicio</h1>
+            <div class="button-container">
+                <a href="{% url 'viewByDepartment' %}" class="bigbtn">
+                    <i class="bi bi-file-earmark-text-fill"></i> Ver reportes por departamento
+                </a>
+                <a href="{% url 'viewByUser' %}" class="bigbtn">
+                    <i class="bi bi-person-fill"></i> Ver reportes por usuario
+                </a>
+                <a href="{% url 'viewByTime' %}" class="bigbtn">
+                    <i class="bi bi-clock-fill"></i> Ver reportes por tiempo de resolución
+                </a>
+                <a href="{% url 'viewByEmployee' %}" class="bigbtn">
+                    <i class="bi bi-briefcase-fill"></i> Ver reportes por empleado asistido
+                </a>
+                <a href="{% url 'viewByDate' %}" class="bigbtn">
+                    <i class="bi bi-calendar-date-fill"></i> Ver reportes por fecha realizado
+                </a>
+                <a href="{% url 'viewBySearch' %}" class="bigbtn">
+                    <i class="bi bi-search"></i> Buscar reporte por título
+                </a>
+            </div>
         </div>
     </div>
 
