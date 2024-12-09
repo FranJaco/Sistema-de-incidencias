@@ -117,6 +117,7 @@ USE_TZ = True
 
 LOGIN_URL = 'login'  # El nombre de la URL que definiste
 LOGIN_REDIRECT_URL = 'core/home.html'  # Donde redirigir después de iniciar sesión
+LOGOUT_REDIRECT_URL = '/'
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/

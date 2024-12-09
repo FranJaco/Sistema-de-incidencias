@@ -11,10 +11,19 @@
     {% bootstrap_javascript %}
     {% load static %}
     <style>
+        body {
+            display: flex;
+            flex-direction: row;
+            margin: 0;
+            height: 100vh;
+            /* Asegura que el cuerpo use toda la altura visible */
+        }
+
         .background-container {
             background-color: rgb(153, 152, 152);
-            height: 100%;
+            min-height: 100%;
             width: calc(100% - 33vh);
+            overflow-y: auto;
             /* Esto asegura que el contenedor ocupe el 100% del ancho menos el ancho del menú */
             position: absolute;
             top: 0;
@@ -22,21 +31,25 @@
             /* Empuja el contenedor de fondo para que comience después del menú */
         }
 
+
+
         .left-menu {
-            position: absolute;
-            height: 100%;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
             width: 33vh;
             background-color: rgb(56, 107, 2);
             color: white;
             top: 0;
             left: 0;
-            /* Asegura que el menú se quede en el borde izquierdo */
         }
 
         .main-container {
             background-color: beige;
             width: 80%;
-            height: 80vh;
+            min-height: 60%;
+            height: auto;
+            overflow-y: auto;
             max-width: 1000px;
             margin: 60px auto;
             padding: 30px;
@@ -44,22 +57,22 @@
         }
 
         .main-container div {
-            padding: 15px;
+            padding: 5px;
         }
 
         input,
         select,
         textarea {
-            width: 50vh;
+            width: 100%;
         }
 
         .form-control,
         .form-select {
-            width: 50vh;
+            width: 100%;
         }
 
         textarea {
-            height: 25vh;
+            height: 10vh;
         }
 
         .left-menu h1 {
@@ -82,72 +95,158 @@
             background-color: #555;
             color: black;
         }
+
+        #departments,
+        #employees {
+            width: 100%;
+        }
+
+        .select-container {
+            display: flex;
+            gap: 2rem;
+            justify-content: space-between;
+        }
+
+        .select-container .form-group {
+            flex: 1;
+        }
+
+        .button-div{
+            justify-content: center;
+            display: flex;
+        }
+
+        @media (max-width: 850px) {
+            .left-menu {
+                display: none;
+            }
+
+            .background-container {
+                width: 100%;
+                /* Abarca todo el ancho de la pantalla */
+                left: 0;
+                /* Asegura que empiece desde el borde izquierdo */
+            }
+
+            .main-container {
+                width: 90%;
+                /* Ajusta el ancho según sea necesario */
+                max-width: 600px;
+                /* Límite máximo de ancho para pantallas pequeñas */
+            }
+        }
+
+        @media(max-height: 600px) {
+            .left-menu {
+                display: none;
+            }
+
+            .background-container {
+                width: 100%;
+                /* Abarca todo el ancho de la pantalla */
+                left: 0;
+                /* Asegura que empiece desde el borde izquierdo */
+            }
+
+            .main-container {
+                width: 90%;
+                /* Ajusta el ancho según sea necesario */
+                max-width: 600px;
+                /* Límite máximo de ancho para pantallas pequeñas */
+            }
+        }
     </style>
 </head>
 
 <body>
-
-
     <div class="left-menu d-flex flex-column flex-shrink-0 bg-body-tertiary">
         <h1>Sistema de reportes de incidencias</h1>
         <ul>
             <li><a href="{% url 'home' %}">Inicio</a></li>
             <li><a class="active">Generar nuevo reporte</a></li>
             <li><a href="{% url 'viewReports' %}">Ver reportes anteriores</a></li>
-            {% if user.is_admin %} <li><a href="{% url 'userManagment' %}">Administrar usuarios</a></li>{% endif %}
+            {% if user.is_admin %}
+            <li><a href="{% url 'userManagment' %}">Administrar usuarios</a></li>
+            {% endif %}
         </ul>
+
+        <div class="btn-group dropright" style="width: 100%;">
+            <button type="button" id="user-name" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown"
+                aria-expanded="false" style="width: 100%;">
+                {{ user }}
+            </button>
+            <ul class="dropdown-menu" style="width: 100%;">
+                <li>
+                    <form method="POST" action="{% url 'logout' %}" class="px-3 py-2" style=" margin: 0; width: 100%;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-link text-danger text-decoration-none"
+                            style="width: 100%; text-align: center;">Cerrar sesión</button>
+                    </form>
+                </li>
+            </ul>
+        </div>
     </div>
 
     <div class="background-container">
         <div class="main-container">
-            <h1>Hola, {{ user }}, te encuenteas en Generar nuevos reportes</h1>
-
-            <div class="select-dep">
-                <select name="departments" id="departments" class="form-select" aria-label="Default select example">
-                    <option selected disabled value style="color: grey;"> -- Elige un departamento -- </option>
-                    {% for x in departments %}
-                    <option value="{{ x.id }}">{{ x }}</option>
-                    {% empty %}
-                    <option disabled value="">No hay departamentos disponibles</option>
-                    {% endfor %}
-                </select>
+            <div class="bg-light p-3 mb-4 border-bottom" style="display: inline-flex; align-items: center;">
+                <i class="bi bi-file-earmark-plus-fill me-3 text-primary" style="font-size: 2rem;"></i>
+                <h1 class="m-0 text-secondary">Generar nuevos reportes</h1>
             </div>
 
-            <div class="select-emp" id="employee-container" style="display: none;">
-                <select name="employees" id="employees" class="form-select">
-                    <option selected disabled value style="color: grey;"> -- Elige el empleado que solicitó asistencia
-                        -- </option>
-                </select>
+            <div class="select-container">
+                <div class="form-group">
+                    <label for="departments">Departamento</label>
+                    <select name="departments" id="departments" class="form-select" aria-label="Default select example">
+                        <option selected disabled value style="color: grey;"> -- Elige un departamento -- </option>
+                        {% for x in departments %}
+                        <option value="{{ x.id }}">{{ x }}</option>
+                        {% empty %}
+                        <option disabled value="">No hay departamentos disponibles</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group" id="employee-container" style="display: none;">
+                    <label for="employees">Empleado</label>
+                    <select name="employees" id="employees" class="form-select">
+                        <option selected disabled value style="color: grey;"> -- Elige el empleado que solicitó
+                            asistencia
+                            -- </option>
+                    </select>
+                </div>
             </div>
 
             <div class="title-txt">
+                <label for="titulo">Titulo</label>
                 <input type="text" placeholder="Titulo del reporte" class="form-control">
             </div>
 
             <div class="summary-txt">
+                <label for="resumen">Descripcion</label>
                 <textarea placeholder="Describa la incidencia laboral" class="form-control"
                     aria-label="With textarea"></textarea>
             </div>
 
             <div class="time-txt">
+                <label for="tiempo ">Tiempo de resolucion</label>
                 <select name="time" id="time" class="form-select" aria-label="Default select example">
                     <option selected disabled value style="color: grey;"> -- Elija el tiempo estimado que le tomo
                         resolver la incidencia -- </option>
-                        <option value="1">Aproximadamente 1 minuto</option>
-                        <option value="2">2 a 5 minutos</option>
-                        <option value="3">6 a 10 minutos</option>
-                        <option value="4">10 a 30 minutos</option>
-                        <option value="5">31 minutos a 1 hora</option>
-                        <option value="6">Menos de 4 horas</option>
-                        <option value="7">Menos de 8 horas</option>
-                        <option value="8">Más de 8 horas</option>
+                    <option value="1">Aproximadamente 1 minuto</option>
+                    <option value="2">2 a 5 minutos</option>
+                    <option value="3">6 a 10 minutos</option>
+                    <option value="4">10 a 30 minutos</option>
+                    <option value="5">31 minutos a 1 hora</option>
+                    <option value="6">Menos de 4 horas</option>
+                    <option value="7">Menos de 8 horas</option>
+                    <option value="8">Más de 8 horas</option>
                 </select>
             </div>
 
-            <div>
+            <div class="button-div">
                 <button type="button" class="btn btn-outline-success" id="ReportBtn">Subir reporte</button>
             </div>
-
         </div>
     </div>
 
@@ -157,10 +256,7 @@
             var employeeContainer = document.getElementById('employee-container');
 
             if (departmentId) {
-                // Si se ha seleccionado un departamento, mostramos el div de empleados
                 employeeContainer.style.display = 'block';
-
-                // Hacer una petición AJAX para obtener los empleados de este departamento
                 fetch('/get_employees/' + departmentId + '/')
                     .then(response => response.json())
                     .then(data => {
@@ -175,34 +271,28 @@
                     })
                     .catch(error => console.error('Error al obtener los empleados:', error));
             } else {
-                // Si no se ha seleccionado un departamento, ocultamos el div de empleados
                 employeeContainer.style.display = 'none';
-
-                // Limpiar el select de empleados para evitar que muestre opciones de un departamento anterior
                 document.getElementById('employees').innerHTML = '<option selected value> -- Elige el empleado -- </option>';
             }
         });
 
         document.getElementById('ReportBtn').addEventListener('click', function () {
-            // Recoger los valores del formulario
             var departmentId = document.getElementById('departments').value;
             var employeeId = document.getElementById('employees').value;
             var title = document.querySelector('.title-txt input').value;
             var summary = document.querySelector('.summary-txt textarea').value;
             var time = document.getElementById('time').value;
 
-            // Comprobar si todos los campos están llenos
             if (!departmentId || !employeeId || !title || !summary || !time) {
                 alert("Por favor, complete todos los campos.");
                 return;
             }
 
-            // Realizar la solicitud AJAX para guardar el reporte
             fetch('{% url "addReports" %}', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': '{{ csrf_token }}',  // Importante para el CSRF token en Django
+                    'X-CSRFToken': '{{ csrf_token }}',
                 },
                 body: JSON.stringify({
                     department_id: departmentId,
@@ -216,18 +306,11 @@
                 .then(data => {
                     if (data.success) {
                         alert("Reporte generado con éxito.");
-                        // Aquí puedes redirigir al usuario a la página de reporte o limpiar el formulario si es necesario
-                        document.querySelector('.title-txt input').value = ''; // Vaciar el campo del título
-                        document.querySelector('.summary-txt textarea').value = ''; // Vaciar el campo del resumen
-
-                        // Restablecer el campo de selección de departamento
+                        document.querySelector('.title-txt input').value = '';
+                        document.querySelector('.summary-txt textarea').value = '';
                         document.getElementById('departments').value = '';
-                        // Restablecer el campo de selección de empleados
                         document.getElementById('employees').value = '';
-
                         document.getElementById('time').value = '';
-
-                        // Ocultar el contenedor de empleados si el departamento ya ha sido deseleccionado
                         document.getElementById('employee-container').style.display = 'none';
                     } else {
                         alert("Hubo un error al generar el reporte: " + data.error);
@@ -236,8 +319,6 @@
                 .catch(error => console.error('Error:', error));
         });
     </script>
-
-
 </body>
 
 </html>

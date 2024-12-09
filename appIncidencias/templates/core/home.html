@@ -12,18 +12,32 @@
     {% bootstrap_javascript %}
     {% load static %}
     <style>
+        body {
+            display: flex;
+            flex-direction: row;
+            margin: 0;
+            height: 100vh;
+            /* Asegura que el cuerpo use toda la altura visible */
+        }
+
         .background-container {
             background-color: rgb(153, 152, 152);
-            height: 100%;
+            min-height: 100%;
             width: calc(100% - 33vh);
+            overflow-y: auto;
+            /* Esto asegura que el contenedor ocupe el 100% del ancho menos el ancho del menú */
             position: absolute;
             top: 0;
             left: 33vh;
+            /* Empuja el contenedor de fondo para que comience después del menú */
         }
 
+
+
         .left-menu {
-            position: absolute;
-            height: 100%;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
             width: 33vh;
             background-color: rgb(56, 107, 2);
             color: white;
@@ -34,9 +48,10 @@
         .main-container {
             background-color: beige;
             width: 80%;
-            height: 80vh;
+            min-height: 60%;
+            height: auto;
+            overflow-y: auto;
             max-width: 1000px;
-            min-width: 50vh;
             margin: 60px auto;
             padding: 30px;
             position: relative;
@@ -136,6 +151,46 @@
                 grid-template-columns: 1fr;
             }
         }
+        @media (max-width: 850px) {
+            .left-menu {
+                display: none;
+            }
+
+            .background-container {
+                width: 100%;
+                /* Abarca todo el ancho de la pantalla */
+                left: 0;
+                /* Asegura que empiece desde el borde izquierdo */
+            }
+
+            .main-container {
+                width: 90%;
+                /* Ajusta el ancho según sea necesario */
+                max-width: 600px;
+                /* Límite máximo de ancho para pantallas pequeñas */
+            }
+        }
+
+        @media(max-height: 600px) {
+            .left-menu {
+                display: none;
+            }
+
+            .background-container {
+                width: 100%;
+                /* Abarca todo el ancho de la pantalla */
+                left: 0;
+                /* Asegura que empiece desde el borde izquierdo */
+            }
+
+            .main-container {
+                width: 90%;
+                /* Ajusta el ancho según sea necesario */
+                max-width: 600px;
+                /* Límite máximo de ancho para pantallas pequeñas */
+            }
+        }
+
     </style>
 </head>
 
@@ -149,14 +204,35 @@
             <li><a href="{% url 'viewReports' %}">Ver reportes anteriores</a></li>
             {% if user.is_admin %} <li><a href="{% url 'userManagment' %}">Administrar usuarios</a></li>{% endif %}
         </ul>
+        
+        
+        <div class="btn-group dropright" style="width: 100%;">
+            <button type="button" id="user-name" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" style="width: 100%;">
+                {{ user }}
+            </button>
+            <ul class="dropdown-menu" style="width: 100%;">
+                <li>
+                    <form method="POST" action="{% url 'logout' %}" class="px-3 py-2" style=" margin: 0; width: 100%;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-link text-danger text-decoration-none" style="width: 100%; text-align: center;">Cerrar sesión</button>
+                    </form>
+                </li>
+            </ul>
+        </div>
+
+    </div>
     </div>
 
     <div class="background-container">
         <div class="main-container">
-            <h1>Hola, {{ user }}, te encuentras en el inicio</h1>
+            <div class="bg-light p-3 mb-4 border-bottom" style="display: inline-flex; align-items: center;">
+                <i class="bi bi-house-fill me-3 text-primary" style="font-size: 2rem;"></i>
+                <h1 class="m-0 text-secondary">Inicio</h1>
+            </div>
+
             <div class="button-container">
                 <a href="{% url 'viewByDepartment' %}" class="bigbtn">
-                    <i class="bi bi-file-earmark-text-fill"></i> Ver reportes por departamento
+                    <i class="bi bi-building-fill"></i> Ver reportes por departamento
                 </a>
                 <a href="{% url 'viewByUser' %}" class="bigbtn">
                     <i class="bi bi-person-fill"></i> Ver reportes por usuario
