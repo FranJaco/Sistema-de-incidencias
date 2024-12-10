@@ -97,6 +97,23 @@
             display: none;
         }
 
+        .search-rep {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .search-rep-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            align-items: flex-start;
+        }
+
+        #count {
+            margin: 0;
+        }
+
         @media (max-width: 850px) {
             .left-menu {
                 display: none;
@@ -124,9 +141,7 @@
 
             .background-container {
                 width: 100%;
-                /* Abarca todo el ancho de la pantalla */
                 left: 0;
-                /* Asegura que empiece desde el borde izquierdo */
             }
 
             .main-container {
@@ -182,9 +197,17 @@
             </div>
 
 
-            <div class="select-dep">
-                <input type="search" id="search">
+            <div class="search-rep">
+                <div class="search-rep-input-group">
+                    <label for="search" class="form-label">Introduzca el título del reporte que está buscando:</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="search" id="search" class="form-control" placeholder="Buscar reporte...">
+                    </div>
+                </div>
+                <p id="count" style="display: none;">Cantidad de reportes encontrados: <span id="report-count"></span></p>
             </div>
+            
 
             <table class="table table-striped" name="reports" id="reports-table">
                 <thead>
@@ -241,6 +264,12 @@
         document.getElementById("search").addEventListener("change", function () {
             var titleId = this.value;
 
+            var countTxt = document.getElementById('count');
+            var countSpan = document.getElementById('report-count');
+
+            countTxt.style.display = 'flex';
+
+
             // Mostrar la tabla
             var table = document.getElementById("reports-table");
             table.style.display = "table";
@@ -275,6 +304,9 @@
                 `;
                         tableBody.appendChild(row);
                     });
+
+                    countSpan.textContent = data.reports.length;
+
                 })
                 .catch((error) => {
                     console.error("Error al obtener los reportes:", error);

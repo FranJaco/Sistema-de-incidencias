@@ -73,12 +73,6 @@ def view_by_department(request):
         reports = reports.filter(id__startswith=department_id)
 
 
-    context = {
-        'departments': departments,
-    }
-
-
-
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         report_list = []
         for report in reports:
@@ -100,6 +94,11 @@ def view_by_department(request):
         report = get_object_or_404(Report, id=report_id)
         report.delete()
         return JsonResponse({'success': True})
+    
+    
+    context = {
+        'departments': departments,
+    }
 
     return render(request, 'core/home/viewByDepartment.html', context)
 
@@ -410,7 +409,7 @@ def view_reports(request):
         report.delete()
         return JsonResponse({'success': True})
 
-    reports = Report.objects.all()
+    reports = Report.objects.all().order_by('-creation_date')[:10]
 
     context = {
         'reports': reports,

@@ -93,6 +93,24 @@
             display: none;
         }
 
+        .select-date {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .date-input-group {
+            display: flex;
+            flex-direction: column; 
+            gap: 4px; 
+            align-items: flex-start;
+        }
+
+        #count {
+            margin: 0;
+        }
+
+
         @media (max-width: 850px) {
             .left-menu {
                 display: none;
@@ -167,19 +185,26 @@
     <div class="background-container">
         <div class="main-container">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                
-            <div class="bg-light p-3 mb-4 border-bottom d-flex align-items-center">
-                <i class="bi bi-calendar-date-fill me-3 text-primary" style="font-size: 2rem;"></i>
-                <h1 class="m-0 text-secondary">Ver reportes por fecha</h1>
-            </div>
+
+                <div class="bg-light p-3 mb-4 border-bottom d-flex align-items-center">
+                    <i class="bi bi-calendar-date-fill me-3 text-primary" style="font-size: 2rem;"></i>
+                    <h1 class="m-0 text-secondary">Ver reportes por fecha</h1>
+                </div>
 
                 <a href="{% url 'home' %}" class="btn btn-outline-success">
                     <i class="bi bi-arrow-left-circle"></i> Regresar a Inicio
                 </a>
             </div>
 
-            <label for="date-picker">Seleccione una fecha:</label>
-            <input type="date" id="date-picker" name="date">
+            <div class="select-date">
+                <div class="date-input-group">
+                    <label for="date-picker">Seleccione una fecha:</label>
+                    <input type="date" id="date-picker" name="date">
+                </div>
+                <p id="count" style="display: none;">Cantidad de reportes encontrados: <span id="report-count"></span>
+                </p>
+            </div>
+
 
             <table class="table table-striped" name="reports" id="reports-table">
                 <thead>
@@ -236,6 +261,11 @@
         document.getElementById('date-picker').addEventListener('change', function () {
             var dateId = this.value;
 
+            var countTxt = document.getElementById('count');
+            var countSpan = document.getElementById('report-count');
+
+            countTxt.style.display = 'flex';
+
             // Mostramos la tabla
             var table = document.getElementById('reports-table');
             table.style.display = 'table';
@@ -272,6 +302,7 @@
             `;
                         tableBody.appendChild(row);
                     });
+                    countSpan.textContent = data.reports.length;
                 })
                 .catch(error => {
                     console.error('Error al obtener los reportes:', error);

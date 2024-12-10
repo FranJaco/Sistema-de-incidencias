@@ -74,7 +74,7 @@
         }
 
         #departments {
-            width: 25vh;
+            width: 30vh;
         }
 
         .left-menu a {
@@ -96,6 +96,23 @@
 
         #reports-table {
             display: none;
+        }
+
+        .select-dep{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .dep-input-group {
+            display: flex;
+            flex-direction: column; 
+            gap: 4px; 
+            align-items: flex-start;
+        }
+
+        #count {
+            margin: 0;
         }
 
         @media (max-width: 850px) {
@@ -187,14 +204,19 @@
 
 
             <div class="select-dep">
-                <select name="departments" id="departments" class="form-select" aria-label="Default select example">
-                    <option selected disabled value style="color: grey;"> -- Elige un departamento -- </option>
-                    {% for x in departments %}
-                    <option value="{{ x.id }}">{{ x }}</option>
-                    {% empty %}
-                    <option disabled value="">No hay departamentos disponibles</option>
-                    {% endfor %}
-                </select>
+                <div class="dep-input-group">
+                    <label for="departments">Seleccione el departamento deseado:</label>
+                    <select name="departments" id="departments" class="form-select" aria-label="Default select example">
+                        <option selected disabled value style="color: grey;"> -- Elige un departamento -- </option>
+                        {% for x in departments %}
+                        <option value="{{ x.id }}">{{ x }}</option>
+                        {% empty %}
+                        <option disabled value="">No hay departamentos disponibles</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <p id="count" style="display: none;">Cantidad de reportes encontrados: <span id="report-count"></span>
+                </p>
             </div>
 
             <table class="table table-striped" name="reports" id="reports-table">
@@ -252,6 +274,11 @@
         document.getElementById('departments').addEventListener('change', function () {
             var departmentId = this.value;
 
+            var countTxt = document.getElementById('count');
+            var countSpan = document.getElementById('report-count');
+
+            countTxt.style.display = 'flex'; 
+
             // Mostramos la tabla
             var table = document.getElementById('reports-table');
             table.style.display = 'table';
@@ -288,6 +315,9 @@
             `;
                         tableBody.appendChild(row);
                     });
+
+                    countSpan.textContent = data.reports.length;
+
                 })
                 .catch(error => {
                     console.error('Error al obtener los reportes:', error);

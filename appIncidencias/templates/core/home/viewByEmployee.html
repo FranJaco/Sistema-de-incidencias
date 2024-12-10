@@ -82,8 +82,26 @@
 
         .select-container {
             display: flex;
-            gap: 1vh;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
         }
+
+        .select-container-input-group {
+            display: flex;
+            gap: 20px;
+        }
+
+        .select-container-input-group div {
+            display: flex;
+            flex-direction: column;
+        }
+
+        #count {
+            margin: 0;
+            margin-left: auto;
+        }
+
 
         .left-menu a {
             display: block;
@@ -191,24 +209,33 @@
             </div>
 
             <div class="select-container">
-                <div class="select-dep">
-                    <select name="departments" id="departments" class="form-select" aria-label="Default select example">
-                        <option selected disabled value style="color: grey;"> -- Elige un departamento -- </option>
-                        {% for x in departments %}
-                        <option value="{{ x.id }}">{{ x }}</option>
-                        {% empty %}
-                        <option disabled value="">No hay departamentos disponibles</option>
-                        {% endfor %}
-                    </select>
+                <!-- Contenedor para los select y sus labels -->
+                <div class="select-container-input-group">
+                    <div class="select-dep">
+                        <label for="departments">Seleccione el departamento:</label>
+                        <select name="departments" id="departments" class="form-select"
+                            aria-label="Default select example">
+                            <option selected disabled value style="color: grey;"> -- Elige un departamento -- </option>
+                            {% for x in departments %}
+                            <option value="{{ x.id }}">{{ x }}</option>
+                            {% empty %}
+                            <option disabled value="">No hay departamentos disponibles</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="select-emp" id="employee-container" style="display: none;">
+                        <label for="employees">Seleccione el empleado:</label>
+                        <select name="employees" id="employees" class="form-select">
+                            <option selected disabled value style="color: grey;"> -- Elige el empleado que solicitó
+                                asistencia -- </option>
+                        </select>
+                    </div>
                 </div>
 
-                <div class="select-emp" id="employee-container" style="display: none;">
-                    <select name="employees" id="employees" class="form-select">
-                        <option selected disabled value style="color: grey;"> -- Elige el empleado que solicitó
-                            asistencia
-                            -- </option>
-                    </select>
-                </div>
+                <!-- Texto de la cantidad de reportes -->
+                <p id="count" style="display: none;">Cantidad de reportes encontrados: <span id="report-count"></span>
+                </p>
             </div>
 
             <table class="table table-striped" name="reports" id="reports-table">
@@ -298,6 +325,13 @@
         document.getElementById('employees').addEventListener('change', function () {
             var employeeId = this.value; // Obtén el id del usuario seleccionado
 
+
+
+            var countTxt = document.getElementById('count');
+            var countSpan = document.getElementById('report-count');
+
+            countTxt.style.display = 'flex';
+
             // Mostrar la tabla
             var table = document.getElementById('reports-table');
             table.style.display = 'table';
@@ -333,6 +367,9 @@
                 `;
                         tableBody.appendChild(row);
                     });
+
+                    countSpan.textContent = data.reports.length;
+
                 })
                 .catch(error => {
                     console.error('Error al obtener los reportes:', error);
