@@ -14,6 +14,8 @@ from datetime import timedelta, datetime
 from django.utils.formats import date_format
 from django.utils.dateparse import parse_date
 from django.db.models.functions import Substr
+from django.core.exceptions import ValidationError
+
 
 def admin_required(user):
     return user.is_authenticated and user.is_admin
@@ -65,7 +67,7 @@ def home_view(request):
 @login_required
 def view_by_department(request):
     departments = Department.objects.all()
-    reports = Report.objects.all()
+    reports = Report.objects.all().order_by('-creation_date')
 
     # Si se pasa un parámetro 'department_id', filtramos los reportes
     department_id = request.GET.get('department_id')
@@ -108,7 +110,7 @@ def view_by_user(request):
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         user_id = request.GET.get('user_id')
         if user_id:
-            reports = Report.objects.filter(tec_supp_emp__id=user_id)  # Filtrar por usuario
+            reports = Report.objects.filter(tec_supp_emp__id=user_id).order_by('-creation_date')  # Filtrar por usuario
             report_list = [
                 {
                     'id': report.id,
@@ -156,11 +158,11 @@ def view_by_time(request):
 
         # Filtrar los reportes dentro del rango especificado
         if lower_limit is None:
-            reports = Report.objects.filter(resolution_time__lt=upper_limit)
+            reports = Report.objects.filter(resolution_time__lt=upper_limit).order_by('-creation_date')
         elif upper_limit is None:
-            reports = Report.objects.filter(resolution_time__gte=lower_limit)
+            reports = Report.objects.filter(resolution_time__gte=lower_limit).order_by('-creation_date')
         else:
-            reports = Report.objects.filter(resolution_time__gte=lower_limit, resolution_time__lt=upper_limit)
+            reports = Report.objects.filter(resolution_time__gte=lower_limit, resolution_time__lt=upper_limit).order_by('-creation_date')
 
         # Serializar datos para el frontend
         report_list = [
@@ -186,7 +188,7 @@ def view_by_employee(request):
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         employee_id = request.GET.get('employee_id')
         if employee_id:
-            reports = Report.objects.filter(non_tec_emp=employee_id)  # Filtrar por usuario
+            reports = Report.objects.filter(non_tec_emp=employee_id).order_by('-creation_date')  # Filtrar por usuario
             report_list = [
                 {
                     'id': report.id,
@@ -226,7 +228,7 @@ def view_by_date(request):
             return JsonResponse({"error": "Fecha inválida"}, status=400)
 
         # Filtrar los reportes por la fecha de creación
-        reports = Report.objects.filter(creation_date__date=date_filter)
+        reports = Report.objects.filter(creation_date__date=date_filter).order_by('-creation_date')
 
         # Serializar los datos para el frontend
         report_list = [
@@ -253,7 +255,7 @@ def view_by_search(request):
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         title_id = request.GET.get('title_id')
         if title_id:
-            reports = Report.objects.filter(title__icontains=title_id)  # Filtrar por usuario
+            reports = Report.objects.filter(title__icontains=title_id).order_by('-creation_date')  # Filtrar por usuario
             report_list = [
                 {
                     'id': report.id,
@@ -409,10 +411,77 @@ def view_reports(request):
         report.delete()
         return JsonResponse({'success': True})
 
-    reports = Report.objects.all().order_by('-creation_date')[:10]
+    if request.method == 'POST' and 'edit_report_id' in request.POST:
+        # Editar reporte
+        report_id = request.POST['edit_report_id']
+        report = get_object_or_404(Report, id=report_id)
 
+        # Obtener los nuevos valores del formulario
+        employee_id = request.POST.get('employee')
+        title = request.POST.get('title')
+        summary = request.POST.get('summary')
+        time_estimate = request.POST.get('time')
+
+        # Validaciones
+        if not title or not summary:
+            return JsonResponse({'success': False, 'error': 'El título y el resumen son obligatorios.'})
+
+        if employee_id:
+            try:
+                employee = Non_Tech_employee.objects.get(id=employee_id)
+            except Non_Tech_employee.DoesNotExist:
+                return JsonResponse({'success': False, 'error': 'Empleado no encontrado.'})
+        else:
+            return JsonResponse({'success': False, 'error': 'El empleado es obligatorio.'})
+
+        # Mapeo del tiempo estimado a minutos
+        time_map = {
+            "1": 1,      # 1 minuto
+            "2": 5,      # 2 a 5 minutos
+            "3": 10,     # 6 a 10 minutos
+            "4": 30,     # 10 a 30 minutos
+            "5": 60,     # 31 minutos a 1 hora
+            "6": 240,    # Menos de 4 horas
+            "7": 480,    # Menos de 8 horas
+            "8": 481,    # Más de 8 horas
+        }
+
+        # Validar y convertir el tiempo estimado
+        if time_estimate:
+            if time_estimate not in time_map:
+                return JsonResponse({'success': False, 'error': 'Tiempo estimado inválido.'})
+            resolution_time_minutes = time_map[time_estimate]
+            resolution_time = timedelta(minutes=resolution_time_minutes)
+        else:
+            resolution_time = None  # Si no se proporciona un tiempo y es opcional
+
+        # Actualizar el reporte
+        try:
+            report.tec_supp_emp = request.user
+            report.non_tec_emp = employee
+            report.title = title
+            report.summary = summary
+            report.resolution_time = resolution_time
+            report.save()
+        except ValidationError as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+
+        # Formatear `resolution_time` para la respuesta JSON
+        formatted_resolution_time = (
+            f"{resolution_time.days} días, {resolution_time.seconds // 3600} horas, {(resolution_time.seconds // 60) % 60} minutos"
+            if resolution_time
+            else "Sin resolver"
+        )
+
+
+    # Obtener reportes y contexto
+    reports = Report.objects.all().order_by('-creation_date')[:10]
     context = {
         'reports': reports,
+        'departments': Department.objects.all(),
+        'employees': Non_Tech_employee.objects.all(),
     }
 
-    return render (request, 'core/viewReports.html', context)
+    return render(request, 'core/viewReports.html', context)
+
+
