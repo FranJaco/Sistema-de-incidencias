@@ -53,7 +53,6 @@
             min-height: 60%;
             height: auto;
             overflow-y: auto;
-            max-width: 1000px;
             margin: 60px auto;
             padding: 30px;
             position: relative;
@@ -253,6 +252,78 @@
             </div>
         </div>
 
+        <div id="editReportsModal" class="modal fade" role="dialog">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title">Editar reporte - ID: <span id="modalReportId"></span></h4>
+                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="editReportForm" method="POST" action="{% url 'viewByUser' %}">
+                            {% csrf_token %}
+                            <input type="hidden" id="editReportId" name="edit_report_id">
+
+                            <div class="form-group">
+                                <label for="departments">Departamento</label>
+                                <select name="departments" id="editDepartments" class="form-select"
+                                    aria-label="Default select example">
+                                    <option selected disabled value style="color: grey;"> -- Elige un departamento
+                                        --
+                                    </option>
+                                    {% for x in departments %}
+                                    <option value="{{ x.id }}">{{ x }}</option>
+                                    {% empty %}
+                                    <option disabled value="">No hay departamentos disponibles</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="form-group" id="employee-container">
+                                <label for="employees">Empleado</label>
+                                <select name="employee" id="editEmployees" class="form-select">
+                                    <option selected disabled value style="color: grey;"> -- Elige el empleado --
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="editTitle">Título:</label>
+                                <input type="text" class="form-control" id="editTitle" name="title" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="editSummary">Resumen:</label>
+                                <textarea class="form-control" id="editSummary" name="summary" required></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="time">Tiempo de resolución:</label>
+                                <select name="time" id="time" class="form-select"
+                                    aria-label="Default select example">
+                                    <option selected disabled value style="color: grey;"> -- Elija el tiempo
+                                        estimado --
+                                    </option>
+                                    <option value="1">Aproximadamente 1 minuto</option>
+                                    <option value="2">2 a 5 minutos</option>
+                                    <option value="3">6 a 10 minutos</option>
+                                    <option value="4">10 a 30 minutos</option>
+                                    <option value="5">31 minutos a 1 hora</option>
+                                    <option value="6">Menos de 4 horas</option>
+                                    <option value="7">Menos de 8 horas</option>
+                                    <option value="8">Más de 8 horas</option>
+                                </select>
+                            </div>
+
+                            <div class="modal-footer">
+                                <button type="submit" class="btn btn-primary">Guardar cambios</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div id="eraseReports" class="modal fade" role="dialog">
             <div class="modal-dialog">
                 <div class="modal-content">
@@ -305,7 +376,10 @@
                             data-target="#viewReports" data-id="${report.id}" data-title="${report.title}"
                             data-user="${report.tec_supp_emp}" data-summary="${report.summary}" data-time="${report.resolution_time}">Ver</button>
                         <button type="button" class="btn btn-outline-warning" id="EditReportBtn" data-toggle="modal"
-                            data-target="#viewReports">Editar</button>
+                        data-target="#editReportsModal" data-id="${report.id}" data-title="${report.title}"
+                        data-summary="${report.summary}" data-user="${report.tec_supp_emp}"
+                        data-employee="${report.non_tec_emp_id}" data-time="${report.resolution_time}" data-raw-time="${report.raw_time}">
+                        Editar</button>
                         <button type="button" class="btn btn-outline-danger" data-toggle="modal"
                             data-target="#eraseReports" data-id="${report.id}">Eliminar</button>
                     </td>
@@ -352,7 +426,7 @@
             console.log('ID del reporte a eliminar:', reportId);  // Verifica que el ID sea correcto
 
             $.ajax({
-                url: '/viewReports/',  // Mismo URL de viewReports
+                url: '/viewByUser/',  // Mismo URL de viewReports
                 type: 'POST',
                 data: {
                     'csrfmiddlewaretoken': '{{ csrf_token }}',  // Asegúrate de pasar el token CSRF
@@ -371,6 +445,119 @@
                     console.error('Error:', errmsg);  // Para depuración
                 }
             });
+        });
+
+        $('#editReportsModal').on('show.bs.modal', function (event) {
+            var button = $(event.relatedTarget);
+            var reportId = button.data('id');
+            var title = button.data('title');
+            var summary = button.data('summary');
+            var rawTime = button.data('raw-time');
+            var employee = button.data('employee');
+            console.log(employee)
+
+            var departmentId = employee.substring(0, 6);
+
+            function mapTimeToOption(time) {
+                if (!time) return null; // Si no hay tiempo, retorna null
+                var [hours, minutes] = time.split(':').map(Number);
+                var totalMinutes = hours * 60 + minutes;
+
+                if (totalMinutes <= 1) return "1"; // 1 minuto
+                if (totalMinutes <= 5) return "2"; // 2 a 5 minutos
+                if (totalMinutes <= 10) return "3"; // 6 a 10 minutos
+                if (totalMinutes <= 30) return "4"; // 10 a 30 minutos
+                if (totalMinutes <= 60) return "5"; // 31 minutos a 1 hora
+                if (totalMinutes <= 240) return "6"; // Menos de 4 horas
+                if (totalMinutes <= 480) return "7"; // Menos de 8 horas
+                return "8"; // Más de 8 horas
+            }
+
+            var selectedTimeOption = mapTimeToOption(rawTime);
+
+            console.log(rawTime)
+
+            var modal = $(this);
+
+            modal.find('#modalReportId').text(reportId); // Actualizar el ID en el encabezado
+            modal.find('#editReportId').val(reportId); // Rellenar el ID en el formulario oculto
+            modal.find('#editTitle').val(title); // Rellenar título
+            modal.find('#editSummary').val(summary); // Rellenar resumen
+
+            var departmentSelect = modal.find('#editDepartments');
+            departmentSelect.val(departmentId);
+
+
+
+            if (departmentId) {
+                fetch(`/get_employees/${departmentId}/`) // Usar la ruta existente
+                    .then(response => response.json())
+                    .then(data => {
+                        var employeeSelect = modal.find('#editEmployees');
+                        employeeSelect.empty(); // Vaciar opciones previas
+
+                        // Agregar opción predeterminada
+                        employeeSelect.append('<option selected disabled value style="color: grey;"> -- Elige el empleado -- </option>');
+
+                        // Agregar empleados al select y seleccionar el empleado correspondiente
+                        data.employees.forEach(emp => {
+                            var isSelected = emp.id === employee; // Comparar IDs
+                            employeeSelect.append(
+                                `<option value="${emp.id}" ${isSelected ? 'selected' : ''}>${emp.name}</option>`
+                            );
+                        });
+                    })
+                    .catch(error => console.error('Error al cargar empleados:', error));
+            }
+
+            // Seleccionar tiempo estimado
+            var timeSelect = modal.find('#time');
+            timeSelect.val(selectedTimeOption); // Seleccionar la opción correspondiente
+
+            // Cargar los empleados para el departamento seleccionado
+            var employeeSelect = modal.find('#employees');
+            employeeSelect.empty(); // Vaciar opciones previas
+
+            // Agregar opción predeterminada
+            employeeSelect.append('<option selected disabled value style="color: grey;"> -- Elige el empleado -- </option>');
+
+            // Cargar empleados de la API del departamento, sin enviar el ID de departamento
+            fetch(`/get_employees/${departmentId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    data.employees.forEach(emp => {
+                        var isSelected = parseInt(emp.id) === parseInt(employee); // Asegurarse de que ambos sean números
+                        employeeSelect.append(
+                            `<option value="${emp.id}" ${isSelected ? 'selected' : ''}>${emp.name}</option>`
+                        );
+                    });
+                })
+                .catch(error => console.error('Error al cargar empleados:', error));
+        });
+
+
+        document.getElementById('editDepartments').addEventListener('change', function () {
+            var departmentId = this.value;
+            var employeeContainer = document.getElementById('employee-container');
+
+            if (departmentId) {
+                fetch('/get_employees/' + departmentId + '/')
+                    .then(response => response.json())
+                    .then(data => {
+                        var employeeSelect = document.getElementById('editEmployees');
+                        employeeSelect.innerHTML = '<option selected value> -- Elige el empleado -- </option>';
+                        data.employees.forEach(function (employee) {
+                            var option = document.createElement('option');
+                            option.value = employee.id;
+                            option.textContent = employee.name;
+                            employeeSelect.appendChild(option);
+                        });
+                    })
+                    .catch(error => console.error('Error al obtener los empleados:', error));
+            } else {
+                employeeContainer.style.display = 'none';
+                document.getElementById('employees').innerHTML = '<option selected value> -- Elige el empleado -- </option>';
+            }
         });
 
 

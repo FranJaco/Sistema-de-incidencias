@@ -58,6 +58,20 @@ def format_duration(duration):
     minutes, seconds = divmod(remainder, 60)
     return f"{hours}h {minutes}m {seconds}s"
 
+def format_timedelta_iso_to_hms(iso_duration):
+    try:
+        # Si `raw_time` ya es timedelta, lo formatea directamente
+        if isinstance(iso_duration, timedelta):
+            total_seconds = int(iso_duration.total_seconds())
+            hours, remainder = divmod(total_seconds, 3600)
+            minutes, seconds = divmod(remainder, 60)
+            return f"{hours:02}:{minutes:02}:{seconds:02}"  # Formato HH:MM:SS
+        else:
+            return "00:00:00"  # Valor por defecto si es nulo o incorrecto
+    except Exception as e:
+        print(f"Error al formatear raw_time: {e}")
+        return "00:00:00"
+
 
 @login_required
 def home_view(request):
@@ -83,7 +97,9 @@ def view_by_department(request):
                 'title': report.title,
                 'creation_date': date_format(report.creation_date, format='N j, Y, P', use_l10n=True), 
                 'non_tec_emp': f"{report.non_tec_emp.pile_name} {report.non_tec_emp.sur_name}",
+                'non_tec_emp_id': report.non_tec_emp.id, 
                 'resolution_time': format_duration(report.resolution_time),
+                'raw_time': format_timedelta_iso_to_hms(report.resolution_time), 
                 'tec_supp_emp': f"{report.tec_supp_emp.pile_name} {report.tec_supp_emp.sur_name}",  
                 'summary': report.summary,
             })
@@ -96,6 +112,68 @@ def view_by_department(request):
         report = get_object_or_404(Report, id=report_id)
         report.delete()
         return JsonResponse({'success': True})
+    
+    if request.method == 'POST' and 'edit_report_id' in request.POST:
+        # Editar reporte
+        report_id = request.POST['edit_report_id']
+        report = get_object_or_404(Report, id=report_id)
+
+        # Obtener los nuevos valores del formulario
+        employee_id = request.POST.get('employee')
+        title = request.POST.get('title')
+        summary = request.POST.get('summary')
+        time_estimate = request.POST.get('time')
+
+        # Validaciones
+        if not title or not summary:
+            return JsonResponse({'success': False, 'error': 'El título y el resumen son obligatorios.'})
+
+        if employee_id:
+            try:
+                employee = Non_Tech_employee.objects.get(id=employee_id)
+            except Non_Tech_employee.DoesNotExist:
+                return JsonResponse({'success': False, 'error': 'Empleado no encontrado.'})
+        else:
+            return JsonResponse({'success': False, 'error': 'El empleado es obligatorio.'})
+
+        # Mapeo del tiempo estimado a minutos
+        time_map = {
+            "1": 1,      # 1 minuto
+            "2": 5,      # 2 a 5 minutos
+            "3": 10,     # 6 a 10 minutos
+            "4": 30,     # 10 a 30 minutos
+            "5": 60,     # 31 minutos a 1 hora
+            "6": 240,    # Menos de 4 horas
+            "7": 480,    # Menos de 8 horas
+            "8": 481,    # Más de 8 horas
+        }
+
+        # Validar y convertir el tiempo estimado
+        if time_estimate:
+            if time_estimate not in time_map:
+                return JsonResponse({'success': False, 'error': 'Tiempo estimado inválido.'})
+            resolution_time_minutes = time_map[time_estimate]
+            resolution_time = timedelta(minutes=resolution_time_minutes)
+        else:
+            resolution_time = None  # Si no se proporciona un tiempo y es opcional
+
+        # Actualizar el reporte
+        try:
+            report.tec_supp_emp = request.user
+            report.non_tec_emp = employee
+            report.title = title
+            report.summary = summary
+            report.resolution_time = resolution_time
+            report.save()
+        except ValidationError as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+
+        # Formatear `resolution_time` para la respuesta JSON
+        formatted_resolution_time = (
+            f"{resolution_time.days} días, {resolution_time.seconds // 3600} horas, {(resolution_time.seconds // 60) % 60} minutos"
+            if resolution_time
+            else "Sin resolver"
+        )
     
     
     context = {
@@ -117,17 +195,82 @@ def view_by_user(request):
                     'title': report.title,
                     'creation_date': date_format(report.creation_date, format='N j, Y, P', use_l10n=True), 
                     'non_tec_emp': f"{report.non_tec_emp.pile_name} {report.non_tec_emp.sur_name}",
+                    'non_tec_emp_id': report.non_tec_emp.id, 
                     'tec_supp_emp': f"{report.tec_supp_emp.pile_name} {report.tec_supp_emp.sur_name}",
                     'resolution_time': format_duration(report.resolution_time),
+                    'raw_time': format_timedelta_iso_to_hms(report.resolution_time), 
                     'summary': report.summary
                 }
                 for report in reports
             ]
             return JsonResponse({'reports': report_list})
+        
+    if request.method == 'POST' and 'edit_report_id' in request.POST:
+        # Editar reporte
+        report_id = request.POST['edit_report_id']
+        report = get_object_or_404(Report, id=report_id)
+
+        # Obtener los nuevos valores del formulario
+        employee_id = request.POST.get('employee')
+        title = request.POST.get('title')
+        summary = request.POST.get('summary')
+        time_estimate = request.POST.get('time')
+
+        # Validaciones
+        if not title or not summary:
+            return JsonResponse({'success': False, 'error': 'El título y el resumen son obligatorios.'})
+
+        if employee_id:
+            try:
+                employee = Non_Tech_employee.objects.get(id=employee_id)
+            except Non_Tech_employee.DoesNotExist:
+                return JsonResponse({'success': False, 'error': 'Empleado no encontrado.'})
+        else:
+            return JsonResponse({'success': False, 'error': 'El empleado es obligatorio.'})
+
+        # Mapeo del tiempo estimado a minutos
+        time_map = {
+            "1": 1,      # 1 minuto
+            "2": 5,      # 2 a 5 minutos
+            "3": 10,     # 6 a 10 minutos
+            "4": 30,     # 10 a 30 minutos
+            "5": 60,     # 31 minutos a 1 hora
+            "6": 240,    # Menos de 4 horas
+            "7": 480,    # Menos de 8 horas
+            "8": 481,    # Más de 8 horas
+        }
+
+        # Validar y convertir el tiempo estimado
+        if time_estimate:
+            if time_estimate not in time_map:
+                return JsonResponse({'success': False, 'error': 'Tiempo estimado inválido.'})
+            resolution_time_minutes = time_map[time_estimate]
+            resolution_time = timedelta(minutes=resolution_time_minutes)
+        else:
+            resolution_time = None  # Si no se proporciona un tiempo y es opcional
+
+        # Actualizar el reporte
+        try:
+            report.tec_supp_emp = request.user
+            report.non_tec_emp = employee
+            report.title = title
+            report.summary = summary
+            report.resolution_time = resolution_time
+            report.save()
+        except ValidationError as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+
+        # Formatear `resolution_time` para la respuesta JSON
+        formatted_resolution_time = (
+            f"{resolution_time.days} días, {resolution_time.seconds // 3600} horas, {(resolution_time.seconds // 60) % 60} minutos"
+            if resolution_time
+            else "Sin resolver"
+        )
     
     users = Tech_support_employee.objects.all()
     context = {
         'users': users,
+        'departments': Department.objects.all(),
     }
     return render(request, 'core/home/viewByUser.html', context)
 
@@ -171,16 +314,82 @@ def view_by_time(request):
                 'title': report.title,
                 'creation_date': date_format(report.creation_date, format='N j, Y, P', use_l10n=True),
                 'non_tec_emp': f"{report.non_tec_emp.pile_name} {report.non_tec_emp.sur_name}",
+                'non_tec_emp_id': report.non_tec_emp.id, 
                 'tec_supp_emp': f"{report.tec_supp_emp.pile_name} {report.tec_supp_emp.sur_name}",
                 'resolution_time': format_duration(report.resolution_time),
+                'raw_time': format_timedelta_iso_to_hms(report.resolution_time), 
                 'summary': report.summary,
             }
             for report in reports
         ]
 
         return JsonResponse({'reports': report_list})
+    
+    if request.method == 'POST' and 'edit_report_id' in request.POST:
+        # Editar reporte
+        report_id = request.POST['edit_report_id']
+        report = get_object_or_404(Report, id=report_id)
 
-    context = {}
+        # Obtener los nuevos valores del formulario
+        employee_id = request.POST.get('employee')
+        title = request.POST.get('title')
+        summary = request.POST.get('summary')
+        time_estimate = request.POST.get('time')
+
+        # Validaciones
+        if not title or not summary:
+            return JsonResponse({'success': False, 'error': 'El título y el resumen son obligatorios.'})
+
+        if employee_id:
+            try:
+                employee = Non_Tech_employee.objects.get(id=employee_id)
+            except Non_Tech_employee.DoesNotExist:
+                return JsonResponse({'success': False, 'error': 'Empleado no encontrado.'})
+        else:
+            return JsonResponse({'success': False, 'error': 'El empleado es obligatorio.'})
+
+        # Mapeo del tiempo estimado a minutos
+        time_map = {
+            "1": 1,      # 1 minuto
+            "2": 5,      # 2 a 5 minutos
+            "3": 10,     # 6 a 10 minutos
+            "4": 30,     # 10 a 30 minutos
+            "5": 60,     # 31 minutos a 1 hora
+            "6": 240,    # Menos de 4 horas
+            "7": 480,    # Menos de 8 horas
+            "8": 481,    # Más de 8 horas
+        }
+
+        # Validar y convertir el tiempo estimado
+        if time_estimate:
+            if time_estimate not in time_map:
+                return JsonResponse({'success': False, 'error': 'Tiempo estimado inválido.'})
+            resolution_time_minutes = time_map[time_estimate]
+            resolution_time = timedelta(minutes=resolution_time_minutes)
+        else:
+            resolution_time = None  # Si no se proporciona un tiempo y es opcional
+
+        # Actualizar el reporte
+        try:
+            report.tec_supp_emp = request.user
+            report.non_tec_emp = employee
+            report.title = title
+            report.summary = summary
+            report.resolution_time = resolution_time
+            report.save()
+        except ValidationError as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+
+        # Formatear `resolution_time` para la respuesta JSON
+        formatted_resolution_time = (
+            f"{resolution_time.days} días, {resolution_time.seconds // 3600} horas, {(resolution_time.seconds // 60) % 60} minutos"
+            if resolution_time
+            else "Sin resolver"
+        )
+
+    context = {
+        'departments': Department.objects.all(),
+    }
     return render(request, 'core/home/viewByTime.html', context)
 
 @login_required
@@ -195,13 +404,77 @@ def view_by_employee(request):
                     'title': report.title,
                     'creation_date': date_format(report.creation_date, format='N j, Y, P', use_l10n=True), 
                     'non_tec_emp': f"{report.non_tec_emp.pile_name} {report.non_tec_emp.sur_name}",
+                    'non_tec_emp_id': report.non_tec_emp.id, 
                     'tec_supp_emp': f"{report.tec_supp_emp.pile_name} {report.tec_supp_emp.sur_name}",
                     'resolution_time': format_duration(report.resolution_time),
+                    'raw_time': format_timedelta_iso_to_hms(report.resolution_time), 
                     'summary': report.summary
                 }
                 for report in reports
             ]
             return JsonResponse({'reports': report_list})
+        
+    if request.method == 'POST' and 'edit_report_id' in request.POST:
+        # Editar reporte
+        report_id = request.POST['edit_report_id']
+        report = get_object_or_404(Report, id=report_id)
+
+        # Obtener los nuevos valores del formulario
+        employee_id = request.POST.get('employee')
+        title = request.POST.get('title')
+        summary = request.POST.get('summary')
+        time_estimate = request.POST.get('time')
+
+        # Validaciones
+        if not title or not summary:
+            return JsonResponse({'success': False, 'error': 'El título y el resumen son obligatorios.'})
+
+        if employee_id:
+            try:
+                employee = Non_Tech_employee.objects.get(id=employee_id)
+            except Non_Tech_employee.DoesNotExist:
+                return JsonResponse({'success': False, 'error': 'Empleado no encontrado.'})
+        else:
+            return JsonResponse({'success': False, 'error': 'El empleado es obligatorio.'})
+
+        # Mapeo del tiempo estimado a minutos
+        time_map = {
+            "1": 1,      # 1 minuto
+            "2": 5,      # 2 a 5 minutos
+            "3": 10,     # 6 a 10 minutos
+            "4": 30,     # 10 a 30 minutos
+            "5": 60,     # 31 minutos a 1 hora
+            "6": 240,    # Menos de 4 horas
+            "7": 480,    # Menos de 8 horas
+            "8": 481,    # Más de 8 horas
+        }
+
+        # Validar y convertir el tiempo estimado
+        if time_estimate:
+            if time_estimate not in time_map:
+                return JsonResponse({'success': False, 'error': 'Tiempo estimado inválido.'})
+            resolution_time_minutes = time_map[time_estimate]
+            resolution_time = timedelta(minutes=resolution_time_minutes)
+        else:
+            resolution_time = None  # Si no se proporciona un tiempo y es opcional
+
+        # Actualizar el reporte
+        try:
+            report.tec_supp_emp = request.user
+            report.non_tec_emp = employee
+            report.title = title
+            report.summary = summary
+            report.resolution_time = resolution_time
+            report.save()
+        except ValidationError as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+
+        # Formatear `resolution_time` para la respuesta JSON
+        formatted_resolution_time = (
+            f"{resolution_time.days} días, {resolution_time.seconds // 3600} horas, {(resolution_time.seconds // 60) % 60} minutos"
+            if resolution_time
+            else "Sin resolver"
+        )
     
     departments = Department.objects.all()
     employees = Non_Tech_employee.objects.all()
@@ -237,15 +510,81 @@ def view_by_date(request):
                 'title': report.title,
                 'creation_date': date_format(report.creation_date, format='N j, Y, P', use_l10n=True),
                 'non_tec_emp': f"{report.non_tec_emp.pile_name} {report.non_tec_emp.sur_name}",
+                'non_tec_emp_id': report.non_tec_emp.id, 
                 'tec_supp_emp': f"{report.tec_supp_emp.pile_name} {report.tec_supp_emp.sur_name}",
                 'resolution_time': format_duration(report.resolution_time),
+                'raw_time': format_timedelta_iso_to_hms(report.resolution_time), 
                 'summary': report.summary,
             }
             for report in reports
         ]
 
         return JsonResponse({'reports': report_list})
-    context = {}
+    
+    if request.method == 'POST' and 'edit_report_id' in request.POST:
+        # Editar reporte
+        report_id = request.POST['edit_report_id']
+        report = get_object_or_404(Report, id=report_id)
+
+        # Obtener los nuevos valores del formulario
+        employee_id = request.POST.get('employee')
+        title = request.POST.get('title')
+        summary = request.POST.get('summary')
+        time_estimate = request.POST.get('time')
+
+        # Validaciones
+        if not title or not summary:
+            return JsonResponse({'success': False, 'error': 'El título y el resumen son obligatorios.'})
+
+        if employee_id:
+            try:
+                employee = Non_Tech_employee.objects.get(id=employee_id)
+            except Non_Tech_employee.DoesNotExist:
+                return JsonResponse({'success': False, 'error': 'Empleado no encontrado.'})
+        else:
+            return JsonResponse({'success': False, 'error': 'El empleado es obligatorio.'})
+
+        # Mapeo del tiempo estimado a minutos
+        time_map = {
+            "1": 1,      # 1 minuto
+            "2": 5,      # 2 a 5 minutos
+            "3": 10,     # 6 a 10 minutos
+            "4": 30,     # 10 a 30 minutos
+            "5": 60,     # 31 minutos a 1 hora
+            "6": 240,    # Menos de 4 horas
+            "7": 480,    # Menos de 8 horas
+            "8": 481,    # Más de 8 horas
+        }
+
+        # Validar y convertir el tiempo estimado
+        if time_estimate:
+            if time_estimate not in time_map:
+                return JsonResponse({'success': False, 'error': 'Tiempo estimado inválido.'})
+            resolution_time_minutes = time_map[time_estimate]
+            resolution_time = timedelta(minutes=resolution_time_minutes)
+        else:
+            resolution_time = None  # Si no se proporciona un tiempo y es opcional
+
+        # Actualizar el reporte
+        try:
+            report.tec_supp_emp = request.user
+            report.non_tec_emp = employee
+            report.title = title
+            report.summary = summary
+            report.resolution_time = resolution_time
+            report.save()
+        except ValidationError as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+
+        # Formatear `resolution_time` para la respuesta JSON
+        formatted_resolution_time = (
+            f"{resolution_time.days} días, {resolution_time.seconds // 3600} horas, {(resolution_time.seconds // 60) % 60} minutos"
+            if resolution_time
+            else "Sin resolver"
+        )
+    context = {
+        'departments': Department.objects.all(),
+    }
     # Renderizar la plantilla en caso de solicitud GET estándar
     return render(request, 'core/home/viewByDate.html', context)
 
@@ -262,14 +601,80 @@ def view_by_search(request):
                     'title': report.title,
                     'creation_date': date_format(report.creation_date, format='N j, Y, P', use_l10n=True), 
                     'non_tec_emp': f"{report.non_tec_emp.pile_name} {report.non_tec_emp.sur_name}",
+                    'non_tec_emp_id': report.non_tec_emp.id, 
                     'tec_supp_emp': f"{report.tec_supp_emp.pile_name} {report.tec_supp_emp.sur_name}",
                     'resolution_time': format_duration(report.resolution_time),
+                    'raw_time': format_timedelta_iso_to_hms(report.resolution_time), 
                     'summary': report.summary
                 }
                 for report in reports
             ]
             return JsonResponse({'reports': report_list})
-    context = {}
+        
+    if request.method == 'POST' and 'edit_report_id' in request.POST:
+        # Editar reporte
+        report_id = request.POST['edit_report_id']
+        report = get_object_or_404(Report, id=report_id)
+
+        # Obtener los nuevos valores del formulario
+        employee_id = request.POST.get('employee')
+        title = request.POST.get('title')
+        summary = request.POST.get('summary')
+        time_estimate = request.POST.get('time')
+
+        # Validaciones
+        if not title or not summary:
+            return JsonResponse({'success': False, 'error': 'El título y el resumen son obligatorios.'})
+
+        if employee_id:
+            try:
+                employee = Non_Tech_employee.objects.get(id=employee_id)
+            except Non_Tech_employee.DoesNotExist:
+                return JsonResponse({'success': False, 'error': 'Empleado no encontrado.'})
+        else:
+            return JsonResponse({'success': False, 'error': 'El empleado es obligatorio.'})
+
+        # Mapeo del tiempo estimado a minutos
+        time_map = {
+            "1": 1,      # 1 minuto
+            "2": 5,      # 2 a 5 minutos
+            "3": 10,     # 6 a 10 minutos
+            "4": 30,     # 10 a 30 minutos
+            "5": 60,     # 31 minutos a 1 hora
+            "6": 240,    # Menos de 4 horas
+            "7": 480,    # Menos de 8 horas
+            "8": 481,    # Más de 8 horas
+        }
+
+        # Validar y convertir el tiempo estimado
+        if time_estimate:
+            if time_estimate not in time_map:
+                return JsonResponse({'success': False, 'error': 'Tiempo estimado inválido.'})
+            resolution_time_minutes = time_map[time_estimate]
+            resolution_time = timedelta(minutes=resolution_time_minutes)
+        else:
+            resolution_time = None  # Si no se proporciona un tiempo y es opcional
+
+        # Actualizar el reporte
+        try:
+            report.tec_supp_emp = request.user
+            report.non_tec_emp = employee
+            report.title = title
+            report.summary = summary
+            report.resolution_time = resolution_time
+            report.save()
+        except ValidationError as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+
+        # Formatear `resolution_time` para la respuesta JSON
+        formatted_resolution_time = (
+            f"{resolution_time.days} días, {resolution_time.seconds // 3600} horas, {(resolution_time.seconds // 60) % 60} minutos"
+            if resolution_time
+            else "Sin resolver"
+        )
+    context = {
+        'departments': Department.objects.all(),
+    }
     return render(request, 'core/home/viewBySearch.html', context)
 
 @login_required

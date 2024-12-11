@@ -387,6 +387,8 @@
 
             var departmentId = employee.substring(0, 6);
 
+            console.log(rawTime)
+
             function mapTimeToOption(time) {
                 if (!time) return null; // Si no hay tiempo, retorna null
                 var [hours, minutes] = time.split(':').map(Number);
@@ -395,7 +397,7 @@
                 if (totalMinutes <= 1) return "1"; // 1 minuto
                 if (totalMinutes <= 5) return "2"; // 2 a 5 minutos
                 if (totalMinutes <= 10) return "3"; // 6 a 10 minutos
-                if (totalMinutes <= 30) return "4"; // 10 a 30 minutos
+                if (totalMinutes <= 30) return "4"; // 11 a 30 minutos
                 if (totalMinutes <= 60) return "5"; // 31 minutos a 1 hora
                 if (totalMinutes <= 240) return "6"; // Menos de 4 horas
                 if (totalMinutes <= 480) return "7"; // Menos de 8 horas
